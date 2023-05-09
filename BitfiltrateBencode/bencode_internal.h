@@ -22,6 +22,27 @@ typedef enum
 
 typedef struct
 {
+	bencode_e bencodeType;
+	void* bencodeSubData;
+} bencode_et;
+
+typedef struct
+{
+	bencode_et* dictionaryKey;
+	bencode_et* dictionaryValue;
+} bencode_et_dictionary_pair;
+typedef struct
+{
+	uint64_t dictionaryElementCount;
+	bencode_et_dictionary_pair** dictionaryContents;
+} bencode_et_dictionary;
+typedef struct
+{
+	uint64_t listElementCount;
+	bencode_et** listElementArray;
+} bencode_et_list;
+typedef struct
+{
 	void* byteStringData;
 	uint64_t byteStringDataLength;
 } bencode_et_bytestring;
@@ -30,11 +51,7 @@ typedef struct
 	int64_t integerData;
 } bencode_et_integer;
 
-typedef struct
-{
-	bencode_e bencodeType;
-	void* bencodeSubData;
-} bencode_et;
+
 
 /**
  * Probes the next entity to see what it would be.
@@ -42,9 +59,14 @@ typedef struct
  */
 bencode_e bencode_probeType(bencode_t* __providedBencode);
 /**
+ * Checks whether or not anything else can be read from the provided bencode.
+ */
+uint8_t bencode_canRead(bencode_t* __providedBencode);
+/**
  * Returns a generic structure which is representative of the next entity.
  * TODO: This method is currently recursive in some scenarios. Add a "pending resume offset" field and add the ability to be resumed later on.
  */
 bencode_et* bencode_readNext(bencode_t* __providedBencode);
+
 
 #endif /* BENCODE_INTERNAL_H_ */
