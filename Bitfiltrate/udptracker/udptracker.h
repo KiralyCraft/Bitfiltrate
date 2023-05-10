@@ -31,6 +31,9 @@ typedef struct
 
 } udptrack_t;
 
-
+/*
+ * Creates a new connection to the specified tracker host, at the specified port.
+ */
+udptrack_t* udptracker_connect(const char* __host,uint32_t __port);
 
 #endif /* UDPTRACKER_UDPTRACKER_H_ */
