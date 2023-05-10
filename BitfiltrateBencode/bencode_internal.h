@@ -24,6 +24,9 @@ typedef struct
 {
 	bencode_e bencodeType;
 	void* bencodeSubData;
+
+	uint32_t dataStartOffset; //Remember the start and end of the actual data in the file itself
+	uint32_t dataEndOffset; //The end of the data is actually the index of the final terminator (or part of data)
 } bencode_et;
 
 typedef struct

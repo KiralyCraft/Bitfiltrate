@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include "bencode_internal.h"
 
-bencode_t* bencode_openTorrent(char* __filePath)
+bencode_t* bencode_openFile(char* __filePath)
 {
 	int _fileDescriptor = open(__filePath,O_RDONLY);
 	if (_fileDescriptor < 0)

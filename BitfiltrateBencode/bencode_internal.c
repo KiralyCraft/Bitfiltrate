@@ -24,6 +24,10 @@ void _bencode_incrementOffset(bencode_t* __providedBencode)
 {
 	__providedBencode->currentOffset++;
 }
+uint32_t _bencode_getOffset(bencode_t* __providedBencode)
+{
+	return __providedBencode->currentOffset;
+}
 
 bencode_e bencode_probeType(bencode_t* __providedBencode)
 {
@@ -102,6 +106,7 @@ bencode_et* bencode_readNext(bencode_t* __providedBencode)
 
 	bencode_et* _toReturn = malloc(sizeof(bencode_et));
 	_toReturn->bencodeType = _nextTokenType;
+	_toReturn->dataStartOffset = _bencode_getOffset(__providedBencode); //Remember the start offset of this data. Also have it include the token that indicates it.
 
 	if (_nextTokenType == BENCODE_INTEGER)
 	{
@@ -195,6 +200,9 @@ bencode_et* bencode_readNext(bencode_t* __providedBencode)
 
 		_toReturn->bencodeSubData = _containedData;
 	}
+
+	_toReturn->dataEndOffset = _bencode_getOffset(__providedBencode)-1; //All procedures increment the offset, so naturally one should step back once.
+
 	return _toReturn;
 }
 

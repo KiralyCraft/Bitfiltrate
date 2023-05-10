@@ -17,6 +17,7 @@ typedef struct
 	uint32_t currentOffset;
 } bencode_t;
 
-bencode_t* bencode_openTorrent(char* __filePath);
+
+bencode_t* bencode_openFile(char* __filePath);
 
 #endif /* BENCODE_H_ */
