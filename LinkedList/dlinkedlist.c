@@ -82,33 +82,88 @@ uint8_t _dlinkedlist_deleteGenericElement(void* __specifiedCriteria, dlinkedlist
 
 	while(1)
 	{
-		if (__executionMode == 0) //Position mode
+		if (_currentElement == NULL) //If we reached the end of the list
 		{
-			if (_currentPosition == *(uint64_t*)(__specifiedCriteria))
-			{
-				break;
-			}
+			return 0;
 		}
-		else //Identity mode
+		else
 		{
-			if (_currentElement == __specifiedCriteria)
+			if (__executionMode == 0) //Position mode
 			{
-				_foundElement = 1;
-				break;
+				if (_currentPosition == *(uint64_t*)(__specifiedCriteria))
+				{
+					_foundElement = 1;
+					break;
+				}
 			}
-		}
+			else //Identity mode
+			{
+				if (_currentElement -> elementData == __specifiedCriteria)
+				{
+					_foundElement = 1;
+					break;
+				}
+			}
 
-		_currentElement = _currentElement -> nextElement;
-		_currentPosition++;
+			_currentElement = _currentElement -> nextElement;
+			_currentPosition++;
+		}
 	}
 
-	//=======SPECIFIC CHECKS BASED ON WHICH ELEMENT WE FOUND==========
-	if (_currentElement == __theList -> startElement)
+	if (_foundElement)
 	{
+		//=======SPECIFIC CHECKS BASED ON WHICH ELEMENT WE FOUND==========
+		if (_currentElement == __theList -> startElement)
+		{
+			dlinkedlist_element_t* _secondElement = _currentElement->nextElement;
 
+			if (_secondElement != NULL) //If the list had at least two elements
+			{
+				_secondElement -> previousElement = NULL;
+				__theList -> startElement = _secondElement;
+			}
+			else //If not, the list is now likely empty
+			{
+				__theList -> startElement = NULL;
+			}
+			__theList->elementCount--;
+
+			free(_currentElement);
+		}
+		else if (_currentElement == __theList -> endElement)
+		{
+			dlinkedlist_element_t* _anteElement = _currentElement->previousElement;
+
+			if (_anteElement != NULL) //If the list had at least two elements
+			{
+				_anteElement -> nextElement = NULL;
+				__theList -> endElement = _anteElement;
+			}
+			else //If not, the list is now likely empty
+			{
+				__theList -> endElement = NULL;
+			}
+			__theList->elementCount--;
+
+			free(_currentElement);
+		}
+		else
+		{
+			dlinkedlist_element_t* _furtherElement = _currentElement->nextElement;
+			dlinkedlist_element_t* _anteElement = _currentElement->previousElement;
+
+			_anteElement -> nextElement = _furtherElement;
+			_furtherElement -> previousElement = _anteElement;
+
+			__theList->elementCount--;
+			free(_currentElement);
+		}
+		return 1;
 	}
-
-	return 1;
+	else
+	{
+		return 0; //We couldn't find the element
+	}
 }
 
 uint8_t dlinkedlist_deleteElement(void* __theElement, dlinkedlist_t* __theList)
@@ -121,6 +176,60 @@ uint8_t dlinkedlist_deletePosition(uint64_t __theElementPosition, dlinkedlist_t*
 	return _dlinkedlist_deleteGenericElement(&__theElementPosition,__theList,0);
 }
 
+uint64_t dlinkedlist_getCount(dlinkedlist_t* __theList)
+{
+	return __theList -> elementCount;
+}
 
+/*
+ * Helper function to avoid duplicating code for checking if an element exists, depending on the comparison function.
+ *
+ * If a non-NULL comparison function is provided, the elements should be compared using that function.
+ * Otherwise, simple pointer comparison will take place between elements.
+ */
+uint64_t _dlinkedlist_checkGenericExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*))
+{
+	dlinkedlist_element_t* _currentElement = __theList -> startElement;
+
+	uint64_t _currentPosition = 0;
+	while(1)
+	{
+		if (_currentElement == NULL) //If we reached the end of the list
+		{
+			break;
+		}
+		else
+		{
+			if (__comparisonFunction == NULL)
+			{
+				if (_currentElement -> elementData == __theElement)
+				{
+					return _currentPosition;
+				}
+			}
+			else
+			{
+				if (__comparisonFunction(_currentElement -> elementData,__theElement)) //If the comparison function returns a positive result
+				{
+					return _currentPosition;
+				}
+			}
+			_currentElement = _currentElement -> nextElement;
+			_currentPosition++;
+		}
+	}
+
+	return UINT64_MAX;
+}
+
+uint64_t dlinkedlist_checkExists(void* __theElement, dlinkedlist_t* __theList)
+{
+	return _dlinkedlist_checkGenericExists(__theElement,__theList,NULL);
+}
+
+uint64_t dlinkedlist_checkCustomExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*))
+{
+	return _dlinkedlist_checkGenericExists(__theElement,__theList,__comparisonFunction);
+}
 
 
