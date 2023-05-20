@@ -9,9 +9,9 @@
 
 
 
-void udptracker_comm_outgoingFunction(int __socketDescriptor, void* __outgoingData)
+void udptracker_comm_outgoingFunction(int __socketDescriptor, void* __outgoingData,void* __optionalArgument)
 {
-
+	printf("Got something to send :)");
 }
 
 void* udptracker_comm_incomingFunction(int __socketDescriptor)

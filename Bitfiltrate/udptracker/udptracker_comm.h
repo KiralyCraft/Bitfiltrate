@@ -59,7 +59,7 @@ typedef struct
 /*
  * Networking outgoing function - UDP specific implementation.
  */
-void udptracker_comm_outgoingFunction(int __socketDescriptor, void* __outgoingData);
+void udptracker_comm_outgoingFunction(int __socketDescriptor, void* __outgoingData, void* __optionalArgument);
 /*
  * Networking incoming function - UDP specific implementation.
  */

@@ -17,7 +17,7 @@ void* conpool_executorSendingFunction(void* __providedData)
 	while(1)
 	{
 		void* _poppedData = conc_queue_pop(_connectionDetails->outgoingPacketQueue); //This should be a blocking operation
-		_connectionDetails->outgoingFunction(_connectionDetails->socketDescription,_poppedData);
+		_connectionDetails->outgoingFunction(_connectionDetails->socketDescription,_poppedData,_connectionDetails->optionalArgument);
 	}
 
 	return NULL;

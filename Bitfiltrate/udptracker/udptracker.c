@@ -79,7 +79,7 @@ udptrack_t* udptracker_connect(const char* __givenTrackerURL,uint32_t __givenTra
 uint8_t udptracker_initialize(udptrack_t* __trackerData,conpool_t* __theConnectionPool)
 {
 	//==== CREATE THE CONNECTION POOL ====
-	conc_queue* _outgoingQueue = conpool_createConnection(__theConnectionPool,__trackerData->trackerSocket,udptracker_comm_outgoingFunction,udptracker_comm_incomingFunction,udptracker_comm_processingFunction);
+	conc_queue* _outgoingQueue = conpool_createConnection(__theConnectionPool,__trackerData->trackerSocket,udptracker_comm_outgoingFunction,udptracker_comm_incomingFunction,udptracker_comm_processingFunction,__trackerData);
 	__trackerData->trackerOutgoingPacketQueue = _outgoingQueue;
 	__trackerData->trackerStatus = UDPTRACK_INITIALIZING;
 
