@@ -17,12 +17,16 @@ typedef struct
 	/*
 	 * The description of the socket. This way the ConPool can give it back to specific implementations to handle.
 	 */
-	int socketDescription;
+	void* socketDescription;
 	/*
-	 * The queue of packets submitted by the sender, waiting for the conpool to send them.
+	 * The queue of packets submitted by the sender, waiting for the ConPool to send them.
 	 */
 	conc_queue* outgoingPacketQueue;
 
+	/*
+	 * The execution context which is passed to the processing function as a bundle.
+	 */
+	void* executionContext;
 	/*
 	 * When submitting a connection, one may supply an optional argument to the connection pool.
 	 * This argument is used when calling the outgoing function.
@@ -32,16 +36,18 @@ typedef struct
 	 * The outgoing function to be called by the connection pool handler, when a packet is
 	 * observed in the queue. This function should accept a socket descriptor, the data to be sent, and the length of the data to be sent.
 	 */
-	void (*outgoingFunction)(int,void*,void*);
+	void (*outgoingFunction)(void*,void*,void*);
 	/*
 	 * The incoming function to be called when the connection pool wants to read data from this connection. It must only accept a socket descriptor
 	 * and return the data it received. This function must be a blocking function
 	 */
-	void* (*incomingFunction)(int);
+	void* (*incomingFunction)(void*,void*);
 	/*
-	 * The processing function to be called after the connection pool has successfully read data from the socket. It must accept arbitrary data and return nothing.
+	 * The processing function to be called after the connection pool has successfully read data from the socket. It must accept arbitrary data and may return data.
+	 *
+	 * The returned data, however, is not used for now, but rather the signature is required for the processing thread to accept.
 	 */
-	void (*processingFunction)(void*);
+	void* (*processingFunction)(void*);
 
 } conpool_connection_details_t;
 
@@ -89,13 +95,18 @@ uint8_t conpool_destroyPool(conpool_t* __thePool);
  * - The socket descriptor
  * - The outgoing function (which must accept a socket descriptor and data to send (in a custom format, provided by the implementation
  * - The incoming function (which must accept a socket descriptor, and returns data which will then be processed.
- * - The processing function (which must accept random data and return nothing).
+ * - The processing function (which must accept random data and return nothing). Note that each processing of a packet is done in a different thread, which
+ *   only lives for the duration of the processing event.
  *
- * This function may also take an optional argument, which is supplied to the outgoing function.
+ *   The processing function is also given a bundle of data, of which the first argument (of type void*) is the data to process, and the third one is
+ *   the optional arguments which is passed to the processing function. The actual implementation of processing must free this data bundle after using it.
+ * - The execution context that is only passed to the processing function as the second argument of the bundle.
+ *
+ * This function may also take an optional argument, which is supplied all functions.
  * This function may return NULL if the connection failed to be set up.
  * NOTE: Currently, connections cannot be destroyed unless the whole pool goes down.
  */
-conc_queue* conpool_createConnection(conpool_t* __theConnectionPool, int __socketDescription,void (*__outgoingFunction)(int,void*),void* (*__incomingFunction)(int),void (*__processingFunction)(void*),void* __optionalArgument);
+conc_queue* conpool_createConnection(conpool_t* __theConnectionPool, void* __socketDescription,void (*__outgoingFunction)(void*,void*,void*),void* (*__incomingFunction)(void*,void*),void* (*__processingFunction)(void*),void* __executionContext,void* __optionalArgument);
 
 //TODO implement connection destruction (based on the pointers of the queue?)
 

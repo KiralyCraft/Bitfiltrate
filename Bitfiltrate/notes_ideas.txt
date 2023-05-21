@@ -1,0 +1,27 @@
+Fiecare conexiune cu tracker-ul sa fie un "thread" independent, un pipeline pe baza de evenimente - Sa asigure stari de conexinue independente
+
+Sa existe un watchdog care verifica starea tuturor cererilor pending catre pipelines (daca workerii au primit raspuns la timp sau nu).
+Asta sa functioneze si pentru tracker, care tine evidenta ce si cand urmeaza sa se intample
+Pachetele de comunicare sa aiba un camp tip "fulfilled", si un timestamp. Watchdog-ul are access exclusiv asupra pachetelor de in si out
+
+Fiecare request catre tracker sa fie un publish intent cu timestamp, si sa se masoare cat a durat
+
+Pentru tracker UDP, cand se primeste un raspuns sa fie o functie care se apeleaza din pipeline-ul trackerului
+
+Coordonatorul conexiunii UDP nu e neaprat sa vorbeasca in publish/subscribe, dar actiunile de interactiune sa specifice doar intentii, si sa poti lua rezultate de la el.
+Apelarea lui nu executa in mod direct codul, ci seteaza un flag practic. Executia unui cod de modificare nu implica un raspuns imediat.
+
+Main-ul programului este coordonatorul, care poate sa astepte intr-un while (sau cu notify) dupa un update de la trackers. Pentru peers ii vreifica iterativ, non-blocking
+
+Pipeline-urile sa expuna chestii tip "interfata" prin intermediul unor structs care au pointere catre functii
+
+In the peer pool, an I/O thread (or peer swarm watchdog?) is expected to check for and build together a plan for which packets to write to the disk, and in what order.
+
+This is like a sub-chief that handles peer connections, and the overall status of the download. It is what the main coordinator talks to. The main corodinator talks to only
+two entities - the tracker pipeline, the watchdog, and the peer swarm watchdog.
+
+This sub-chief can also delegate another host for instructions and it's remote peer swarm
+
+
+UNDE AI RAMAS: Implementai o chestie la care ii zici ca vrei sa tina o lista up-to-date de peers pentru un tracker anume. Apoi ai mers la implementarea de get pentru
+double linked list, si la un map. Era in udptracker.c

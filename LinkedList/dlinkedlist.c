@@ -47,8 +47,16 @@ uint8_t dlinkedlist_insertElement(void* __theElement, dlinkedlist_t* __theList)
 	_theNewElement -> nextElement = NULL; //No element after this one
 	_theNewElement -> previousElement = __theList -> endElement; //Link this element to the previous one (which is the final one)
 
-	__theList -> endElement -> nextElement = _theNewElement; //Currently final element's next is the new element
-	__theList -> endElement = _theNewElement; //The new end element is the newly created one
+	if (__theList -> elementCount == 0)
+	{
+		__theList -> startElement = _theNewElement;
+		__theList -> endElement = _theNewElement;
+	}
+	else
+	{
+		__theList -> endElement -> nextElement = _theNewElement; //Currently final element's next is the new element
+		__theList -> endElement = _theNewElement; //The new end element is the newly created one
+	}
 
 	__theList -> elementCount++;
 
@@ -174,6 +182,30 @@ uint8_t dlinkedlist_deleteElement(void* __theElement, dlinkedlist_t* __theList)
 uint8_t dlinkedlist_deletePosition(uint64_t __theElementPosition, dlinkedlist_t* __theList)
 {
 	return _dlinkedlist_deleteGenericElement(&__theElementPosition,__theList,0);
+}
+
+void* dlinkedlist_getCustomElement(void* __comparisonCriteria,uint8_t (*__comparisonFunction)(void*,void*),dlinkedlist_t* __theList)
+{
+	dlinkedlist_element_t* _currentElement = __theList -> startElement;
+
+	uint64_t _currentPosition = 0;
+	while(1)
+	{
+		if (_currentElement == NULL) //If we reached the end of the list
+		{
+			break;
+		}
+		else
+		{
+			if (__comparisonFunction(__comparisonCriteria,_currentElement -> elementData)) //If the comparison function returns a positive result
+			{
+				return _currentElement -> elementData;
+			}
+		}
+		_currentElement = _currentElement -> nextElement;
+		_currentPosition++;
+	}
+	return NULL;
 }
 
 uint64_t dlinkedlist_getCount(dlinkedlist_t* __theList)

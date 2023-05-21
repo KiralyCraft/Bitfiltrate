@@ -20,7 +20,7 @@ int main()
 //	//========DEBUG CODE BELOW==========
 //	int createdSocket = udp_conn_createSocket();
 //
-//	conpool_t* theConnectionPool = conpool_createPool();
+	conpool_t* theConnectionPool = conpool_createPool();
 //
 //	conc_queue* outgoingPacketQueue = conpool_createConnection(theConnectionPool,createdSocket,udp_conn_outgoingFunction,udp_conn_incomingFunction,udp_conn_processingFunction);
 //	getchar();
@@ -32,5 +32,8 @@ int main()
 //	conc_queue_push(outgoingPacketQueue,theBuiltPacket);
 //	getchar();
 
-	udptracker_connect("fosstorrents.com",6969);
+	udptrack_t* theTracker = udptracker_create("tracker.openbittorrent.com",6969);
+
+	udptracker_initialize(theTracker,theConnectionPool);
+	getchar();
 }

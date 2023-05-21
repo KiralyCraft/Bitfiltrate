@@ -48,6 +48,13 @@ uint8_t dlinkedlist_deleteElement(void* __theElement, dlinkedlist_t* __theList);
  */
 uint8_t dlinkedlist_deletePosition(uint64_t __theElementPosition, dlinkedlist_t* __theList);
 /*
+ * Given a comparison criteria and a function for comparison, it fetches the whole element from the list that matches with the criteria, according to the function.
+ * It returns NULL if no such element was found.
+ *
+ * For the comparison function, the first argument is always the provided criteria, and the second is the element within the list.
+ */
+void* dlinkedlist_getCustomElement(void* __comparisonCriteria,uint8_t (*__comparisonFunction)(void*,void*),dlinkedlist_t* __theList);
+/*
  * Returns the number of elements currently present in the list provided.
  */
 uint64_t dlinkedlist_getCount(dlinkedlist_t* __theList);

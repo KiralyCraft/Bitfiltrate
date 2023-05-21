@@ -37,13 +37,14 @@ uint8_t _conpool_submitConnection(conpool_t* __theConnectionPool, conpool_connec
 	return 0;
 }
 
-conc_queue* conpool_createConnection(conpool_t* __theConnectionPool, int __socketDescription,void (*__outgoingFunction)(int,void*),void* (*__incomingFunction)(int),void (*__processingFunction)(void*),void* __optionalArgument)
+conc_queue* conpool_createConnection(conpool_t* __theConnectionPool, void* __socketDescription,void (*__outgoingFunction)(void*,void*,void*),void* (*__incomingFunction)(void*,void*),void* (*__processingFunction)(void*),void* __executionContext,void* __optionalArgument)
 {
 	conpool_connection_details_t* _theNewConnection = malloc(sizeof(conpool_connection_details_t));
 
 	_theNewConnection -> socketDescription = __socketDescription;
 
 	_theNewConnection -> optionalArgument = __optionalArgument;
+	_theNewConnection -> executionContext = __executionContext;
 
 	_theNewConnection -> outgoingFunction = __outgoingFunction;
 	_theNewConnection -> incomingFunction = __incomingFunction;
