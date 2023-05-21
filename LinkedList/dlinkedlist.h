@@ -9,6 +9,7 @@
 #define DLINKEDLIST_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct dlinkedlist_element_t dlinkedlist_element_t;
 
@@ -46,7 +47,7 @@ uint8_t dlinkedlist_deleteElement(void* __theElement, dlinkedlist_t* __theList);
 /*
  * Attempts to delete the element at the given position. If this element does not exist, this function will return a value of "0". Otherwise it returns "1".
  */
-uint8_t dlinkedlist_deletePosition(uint64_t __theElementPosition, dlinkedlist_t* __theList);
+uint8_t dlinkedlist_deletePosition(size_t __theElementPosition, dlinkedlist_t* __theList);
 /*
  * Given a comparison criteria and a function for comparison, it fetches the whole element from the list that matches with the criteria, according to the function.
  * It returns NULL if no such element was found.
@@ -54,6 +55,10 @@ uint8_t dlinkedlist_deletePosition(uint64_t __theElementPosition, dlinkedlist_t*
  * For the comparison function, the first argument is always the provided criteria, and the second is the element within the list.
  */
 void* dlinkedlist_getCustomElement(void* __comparisonCriteria,uint8_t (*__comparisonFunction)(void*,void*),dlinkedlist_t* __theList);
+/*
+ * Attempts to fetch the element at the given position. If it doesn't exist, this function returns NULL. Otherwise, it returns the element at the given position.
+ */
+void* dlinkedlist_getPosition(size_t __theElementPosition, dlinkedlist_t* __theList);
 /*
  * Returns the number of elements currently present in the list provided.
  */

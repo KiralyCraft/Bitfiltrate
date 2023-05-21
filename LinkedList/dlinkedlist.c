@@ -179,7 +179,7 @@ uint8_t dlinkedlist_deleteElement(void* __theElement, dlinkedlist_t* __theList)
 	return _dlinkedlist_deleteGenericElement(__theElement,__theList,1);
 }
 
-uint8_t dlinkedlist_deletePosition(uint64_t __theElementPosition, dlinkedlist_t* __theList)
+uint8_t dlinkedlist_deletePosition(size_t __theElementPosition, dlinkedlist_t* __theList)
 {
 	return _dlinkedlist_deleteGenericElement(&__theElementPosition,__theList,0);
 }
@@ -206,6 +206,11 @@ void* dlinkedlist_getCustomElement(void* __comparisonCriteria,uint8_t (*__compar
 		_currentPosition++;
 	}
 	return NULL;
+}
+
+void* dlinkedlist_getPosition(size_t __theElementPosition, dlinkedlist_t* __theList)
+{
+	if ()
 }
 
 uint64_t dlinkedlist_getCount(dlinkedlist_t* __theList)
