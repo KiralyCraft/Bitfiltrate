@@ -12,7 +12,7 @@
 #include <netinet/in.h>
 #include "concurrent_queue.h"
 #include "../network/conpool.h"
-#include "dlinkedlist.h"
+#include "dlinkedmap.h"
 
 #include "udptracker_comm.h"
 #include "udptracker_proto.h"
@@ -37,7 +37,7 @@ typedef struct
 	//==== CONNECTIVITY ====
 	udptrack_networkconfig* trackerNetworkConfiguration;
 	conc_queue* trackerOutgoingPacketQueue;
-	dlinkedlist_t* trackerConversations;
+	dlinkedmap_t* trackerConversations;
 	//==== SPECIFICS ====
 	/*
 	 * Sent by the tracker upon connection
@@ -89,7 +89,7 @@ typedef struct
 	udptrack_conversation_status_t converstationStatus;
 	udptrack_packet_type_t conversationType;
 	udptrack_packet_t* outgoingRequest;
-	udptrack_packet_reply_t* incomingRequest;
+//	udptrack_packet_reply_t* incomingRequest;
 } udptrack_conversation_t;
 
 /*

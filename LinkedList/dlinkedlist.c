@@ -77,7 +77,7 @@ uint8_t _dlinkedlist_deleteGenericElement(void* __specifiedCriteria, dlinkedlist
 	//=======CASE SPECIFIC PRELIMIARY CHECKS FOR OPTIMISAITON==========
 	if (__executionMode == 0)
 	{
-		if (*(uint64_t*)(__specifiedCriteria) >= dlinkedlist_getCount(__theList))
+		if (*(size_t*)(__specifiedCriteria) >= dlinkedlist_getCount(__theList))
 		{
 			return 0;
 		}
@@ -85,7 +85,7 @@ uint8_t _dlinkedlist_deleteGenericElement(void* __specifiedCriteria, dlinkedlist
 	//========GENERAL BEHAVIOR=========
 	dlinkedlist_element_t* _currentElement = __theList -> startElement;
 
-	uint64_t _currentPosition = 0;
+	size_t _currentPosition = 0;
 	uint8_t _foundElement = 0;
 
 	while(1)
@@ -98,7 +98,7 @@ uint8_t _dlinkedlist_deleteGenericElement(void* __specifiedCriteria, dlinkedlist
 		{
 			if (__executionMode == 0) //Position mode
 			{
-				if (_currentPosition == *(uint64_t*)(__specifiedCriteria))
+				if (_currentPosition == *(size_t*)(__specifiedCriteria))
 				{
 					_foundElement = 1;
 					break;
@@ -188,7 +188,7 @@ void* dlinkedlist_getCustomElement(void* __comparisonCriteria,uint8_t (*__compar
 {
 	dlinkedlist_element_t* _currentElement = __theList -> startElement;
 
-	uint64_t _currentPosition = 0;
+	size_t _currentPosition = 0;
 	while(1)
 	{
 		if (_currentElement == NULL) //If we reached the end of the list
@@ -210,10 +210,36 @@ void* dlinkedlist_getCustomElement(void* __comparisonCriteria,uint8_t (*__compar
 
 void* dlinkedlist_getPosition(size_t __theElementPosition, dlinkedlist_t* __theList)
 {
-	if ()
+	if (__theElementPosition >= __theList->elementCount)
+	{
+		return NULL; //Element is out of range
+	}
+
+	dlinkedlist_element_t* _currentElement = __theList -> startElement;
+
+	size_t _currentPosition = 0;
+	while(1)
+	{
+		if (_currentElement == NULL) //If we reached the end of the list
+		{
+			break;
+		}
+		else
+		{
+			if (_currentPosition == __theElementPosition)
+			{
+				return _currentElement -> elementData;
+			}
+		}
+
+		_currentElement = _currentElement -> nextElement;
+		_currentPosition++;
+	}
+
+	return NULL; //Element was not found
 }
 
-uint64_t dlinkedlist_getCount(dlinkedlist_t* __theList)
+size_t dlinkedlist_getCount(dlinkedlist_t* __theList)
 {
 	return __theList -> elementCount;
 }
@@ -224,11 +250,11 @@ uint64_t dlinkedlist_getCount(dlinkedlist_t* __theList)
  * If a non-NULL comparison function is provided, the elements should be compared using that function.
  * Otherwise, simple pointer comparison will take place between elements.
  */
-uint64_t _dlinkedlist_checkGenericExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*))
+size_t _dlinkedlist_checkGenericExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*))
 {
 	dlinkedlist_element_t* _currentElement = __theList -> startElement;
 
-	uint64_t _currentPosition = 0;
+	size_t _currentPosition = 0;
 	while(1)
 	{
 		if (_currentElement == NULL) //If we reached the end of the list
@@ -259,12 +285,12 @@ uint64_t _dlinkedlist_checkGenericExists(void* __theElement, dlinkedlist_t* __th
 	return UINT64_MAX;
 }
 
-uint64_t dlinkedlist_checkExists(void* __theElement, dlinkedlist_t* __theList)
+size_t dlinkedlist_checkExists(void* __theElement, dlinkedlist_t* __theList)
 {
 	return _dlinkedlist_checkGenericExists(__theElement,__theList,NULL);
 }
 
-uint64_t dlinkedlist_checkCustomExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*))
+size_t dlinkedlist_checkCustomExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*))
 {
 	return _dlinkedlist_checkGenericExists(__theElement,__theList,__comparisonFunction);
 }

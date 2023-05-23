@@ -22,7 +22,7 @@ struct dlinkedlist_element_t
 
 typedef struct
 {
-	uint64_t elementCount;
+	size_t elementCount;
 	dlinkedlist_element_t* startElement;
 	dlinkedlist_element_t* endElement;
 } dlinkedlist_t;
@@ -62,17 +62,17 @@ void* dlinkedlist_getPosition(size_t __theElementPosition, dlinkedlist_t* __theL
 /*
  * Returns the number of elements currently present in the list provided.
  */
-uint64_t dlinkedlist_getCount(dlinkedlist_t* __theList);
+size_t dlinkedlist_getCount(dlinkedlist_t* __theList);
 /*
  * Checks whether or not the given element exists in the specified list.
  * The comparison is simply a comparison of pointers.
  * It returns UINT64_MAX if the element was not found. Otherwise, it returns it's position.
  */
-uint64_t dlinkedlist_checkExists(void* __theElement, dlinkedlist_t* __theList);
+size_t dlinkedlist_checkExists(void* __theElement, dlinkedlist_t* __theList);
 /*
  * The same as the normal function, but it also takes an argument to a function which actually does the comparison when attempting to find an element in the list.
  */
-uint64_t dlinkedlist_checkCustomExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*));
+size_t dlinkedlist_checkCustomExists(void* __theElement, dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*));
 
 
 #endif /* DLINKEDLIST_H_ */

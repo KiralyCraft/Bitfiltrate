@@ -74,9 +74,14 @@ typedef struct
 } udptrack_packet_reply_data_scrape_t;
 
 /*
+ * Helper function that generates transaction IDs.
+ */
+int32_t udptracker_proto_generateTransactionID();
+
+/*
  * Build a connection packet that is ready to be sent out to the tracker.
  */
-udptrack_packet_t* udptracker_proto_requestConnectPacket();
+udptrack_packet_t* udptracker_proto_requestConnectPacket(int32_t __transactionID);
 
 /*
  * A generic function that is intended to process received data from a socket.
@@ -88,5 +93,16 @@ udptrack_packet_t* udptracker_proto_requestConnectPacket();
  */
 void* udptracker_proto_processRawGenericPacket(void* __dataBundle);
 
+/*
+ * Destroys a reply packet.
+ */
+void udptracker_proto_destroyReplyPacket(udptrack_packet_reply_t* __thePacket);
+
+/*
+ * Destroys a generic packet.
+ *
+ * This can either be an outgoing packet, or a packet that is contained within another reply packet, as the packet data itself.
+ */
+void udptracker_proto_destroyPacket(udptrack_packet_t* __thePacket);
 
 #endif /* UDPTRACKER_UDPTRACKER_PROTO_H_ */

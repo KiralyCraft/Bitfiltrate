@@ -9,7 +9,12 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-udptrack_packet_t* udptracker_proto_requestConnectPacket()
+int32_t udptracker_proto_generateTransactionID()
+{
+	return rand(); //rofl
+}
+
+udptrack_packet_t* udptracker_proto_requestConnectPacket(int32_t __transactionID)
 {
 	//==== SETTING UP THE PACKET ====
 	udptrack_packet_t* _newPacket = malloc(sizeof(udptrack_packet_t));
@@ -25,8 +30,8 @@ udptrack_packet_t* udptracker_proto_requestConnectPacket()
 	 */
 	((int32_t*)_packetData)[0] = htonl(0x0417);
 	((int32_t*)_packetData)[1] = htonl(0x27101980);
-	((int32_t*)_packetData)[2] = 0;
-	((int32_t*)_packetData)[3] = rand();
+	((int32_t*)_packetData)[2] = htonl(0);
+	((int32_t*)_packetData)[3] = htonl(__transactionID);
 
 	return _newPacket;
 
@@ -87,6 +92,8 @@ void* udptracker_proto_processRawGenericPacket(void* __dataBundle)
 
 	void (*_upperProcessingFunction)(void*,void*) = _optionalArguments;
 	_upperProcessingFunction(_executionContext,_packetReply);
+
+	udptracker_proto_destroyPacket();
 	return NULL;
 }
 

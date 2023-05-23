@@ -12,8 +12,10 @@
 
 typedef struct dlinkedmap_t dlinkedmap_t;
 
+//TODO support multiple key types, and when freeing, call a function dediated to cleaning the key, if at all possible and/or necessary.
+
 //========GENESIS FUNCTIONS
-dlinkedmap_t* dlinkedmap_createList();
+dlinkedmap_t* dlinkedmap_createMap();
 /*
  * Attempts to destroy this list. If anything goes wrong, this function returns a value of "0". Otherwise it returns "1".
  */
