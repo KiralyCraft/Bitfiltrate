@@ -6,21 +6,19 @@
  */
 
 #include "torrentinfo/torrentinfo.h"
-//#include "network/protocols/tcp_demo/tcp_demo.h"
-//#include "network/protocols/udp_demo/udp_demo.h"
 #include "network/conpool.h"
 #include "concurrent_queue.h"
-
-#include "udptracker/udptracker.h"
+#include "watchdog/watchdog.h"
+#include "watchdog/watchdog_udptracker/watchdog_udptracker.h"
 
 int main()
 {
-//	torrent_t* _theTorrent = openTorrent("systemrescue-10.00-amd64.iso.torrent");
+
 //
 //	//========DEBUG CODE BELOW==========
 //	int createdSocket = udp_conn_createSocket();
 //
-	conpool_t* theConnectionPool = conpool_createPool();
+
 //
 //	conc_queue* outgoingPacketQueue = conpool_createConnection(theConnectionPool,createdSocket,udp_conn_outgoingFunction,udp_conn_incomingFunction,udp_conn_processingFunction);
 //	getchar();
@@ -32,8 +30,14 @@ int main()
 //	conc_queue_push(outgoingPacketQueue,theBuiltPacket);
 //	getchar();
 
-	udptrack_t* theTracker = udptracker_create("tracker.openbittorrent.com",6969);
+//	udptrack_t* theTracker = udptracker_create("tracker.openbittorrent.com",6969);
+//
+//	udptracker_initialize(theTracker,theConnectionPool);
 
-	udptracker_initialize(theTracker,theConnectionPool);
+	watchdog_t* _theWatchdog = watchdog_createWatchdogSupervisor();
+	conpool_t* theConnectionPool = conpool_createPool();
+	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.00-amd64.iso.torrent");
+	watchdog_udptracker_init(_theTorrent,"tracker.openbittorrent.com",6969,_theWatchdog,theConnectionPool);
+
 	getchar();
 }

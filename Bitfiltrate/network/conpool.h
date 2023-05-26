@@ -94,12 +94,15 @@ uint8_t conpool_destroyPool(conpool_t* __thePool);
  * Creates a connection for the submitter to use. It requires:
  * - The socket descriptor
  * - The outgoing function (which must accept a socket descriptor and data to send (in a custom format, provided by the implementation
+ * 	 The outgoing function must also clear the memory allocated to it's packets as soon as they are sent.
+ *
  * - The incoming function (which must accept a socket descriptor, and returns data which will then be processed.
  * - The processing function (which must accept random data and return nothing). Note that each processing of a packet is done in a different thread, which
  *   only lives for the duration of the processing event.
  *
  *   The processing function is also given a bundle of data, of which the first argument (of type void*) is the data to process, and the third one is
  *   the optional arguments which is passed to the processing function. The actual implementation of processing must free this data bundle after using it.
+ *   The processing function must also clear the memory allocated to it's packets as soon as they are processed.
  * - The execution context that is only passed to the processing function as the second argument of the bundle.
  *
  * This function may also take an optional argument, which is supplied all functions.

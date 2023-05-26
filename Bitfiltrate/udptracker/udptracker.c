@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <dlinkedlist.h>
+#include "dlinkedlist.h"
 
 udptrack_t* udptracker_create(const char* __givenTrackerURL,uint32_t __givenTrackerPort)
 {
@@ -88,19 +88,19 @@ uint8_t udptracker_initialize(udptrack_t* __trackerData,conpool_t* __theConnecti
 	__trackerData->trackerStatus = UDPTRACK_INITIALIZING;
 
 	//==== PREPARE FOR CONVERSATION ===
-	__trackerData->trackerConversations = dlinkedmap_createMap();
+	__trackerData->trackerConversations = dlinkedlist_createList();
 
 	int32_t _newTransactionID = udptracker_proto_generateTransactionID();
 
 	udptrack_conversation_t* _newConversation = malloc(sizeof(udptrack_conversation_t));
 	_newConversation -> conversationType = UDP_TRACKER_PACKET_CONNECT;
 	_newConversation -> converstationStatus = UDP_TRACKER_CONV_PENDING;
-	_newConversation -> outgoingRequest = udptracker_proto_requestConnectPacket(_newTransactionID); //TODO replace this with an actual structure for outgoing packets, not things borrowed from the comm, which we should not care about
-//	_newConversation -> incomingRequest = NULL;
+	_newConversation -> conversationID = _newTransactionID;
+	_newConversation -> externalIdentifier = 0; //The connect packet shouldn't have an external identifier, since it is used across all torrents.
 
+	udptrack_packet_t* _outgoingRequestPacket = udptracker_proto_requestConnectPacket(_newTransactionID);
 
-
-	uint8_t _conversationInsertionResult = dlinkedmap_put((void*)_newTransactionID,_newConversation,__trackerData->trackerConversations); //TODO absolute blasphemy - passing an int32 to a void pointer just because it fits. FIX ME!!
+	uint8_t _conversationInsertionResult = dlinkedlist_insertElement(_newConversation,__trackerData->trackerConversations);
 
 	if (_conversationInsertionResult == 0)
 	{
@@ -108,12 +108,30 @@ uint8_t udptracker_initialize(udptrack_t* __trackerData,conpool_t* __theConnecti
 	}
 
 	//==== SENDING PACKETS ====
-	conc_queue_push(_outgoingQueue, _newConversation -> outgoingRequest);
+	conc_queue_push(_outgoingQueue, _outgoingRequestPacket);
 	_newConversation -> converstationStatus = UDP_TRACKER_CONV_STARTED;
 
-	pthread_cond_signal (&__trackerData->updateCondvar);
+//	pthread_cond_broadcast (&__trackerData->updateCondvar); //Why is this needed? There's no reply yet?
 	pthread_mutex_unlock(&__trackerData->lockingMutex);
 	return 0;
+}
+
+/*
+ * Helper function that compares a given key, supposedly an ID, with the ID of a conversation provided as an iterated element.
+ *
+ * This function returns 1 if a match is found, otherwise 0.
+ */
+uint8_t _udptracker_conversationIDComparator(void* __searchedKey, void* __iteratedElement)
+{
+	int32_t* _givenID = __searchedKey;
+	udptrack_conversation_t* _theConversation = __iteratedElement;
+
+	if (*_givenID == _theConversation->conversationID)
+	{
+		return 1;
+	}
+	return 0;
+
 }
 
 /*
@@ -133,42 +151,76 @@ void _udptracker_processResponseAction(udptrack_t* __trackerData,udptrack_packet
 		//=== EXTRACTING PACKET DATA ===
 		udptrack_packet_reply_data_connect_t* _packetReplyConnect = __packetReply -> packetData;
 		__trackerData->connectionID = _packetReplyConnect->connectionID;
-
 		//=== UPDATING TRACKER STATUS ===
 		__trackerData->trackerStatus = UDPTRACK_INITIALIZED;
 	}
 	else if (__packetReply -> packetType == UDP_TRACKER_PACKET_ANNOUNCE)
 	{
-
+		print astea si build announce sa vedem daca merge
+//		udptrack_packet_reply_data_connect_t
+		printf("Announce received\n");
 	}
 	else if (__packetReply -> packetType == UDP_TRACKER_PACKET_SCRAPE)
 	{
-
+		udptrack_packet_reply_data_scrape_t* _packetReplyScrape = __packetReply -> packetData;
+		printf("Scrape received! %d %d %d\n",_packetReplyScrape->completeCount,_packetReplyScrape->downloadCount,_packetReplyScrape->incompleteCount);
 	}
 	else if (__packetReply -> packetType == UDP_TRACKER_PACKET_ERROR)
 	{
+		printf("Error received\n");
 		udptrack_packet_reply_data_error_t* _packetReplyError = __packetReply -> packetData;
 		//TODO handle the error packet, log it perhaps?
 	}
 
 	//=== UPDATING THE CONVERSATION STATUS ===
-	udptrack_conversation_t* _currentConversation = dlinkedmap_get((void*)_transactionID,__trackerData->trackerConversations); //TODO absolute blasphemy, again. Sorry
+	udptrack_conversation_t* _currentConversation = dlinkedlist_getCustomElement(&_transactionID,_udptracker_conversationIDComparator,__trackerData->trackerConversations);
 	if (_currentConversation == NULL)
 	{
-		printf("TODO: No es bueno, convo %d not found when process1\n",_transactionID);
+		printf("TODO: No es bueno, convo %d not found when process!!\n",_transactionID);
 	}
 	else
 	{
-		do not store packet data in the conversations, but rather free them as soon as they're out the window,
-		clear received packets (by the protocol handler) as soon as they are processed.
-		only store the transaction type and ID as a conversation
-		//TODO maybe store these somewhere in a log, don't clear them yet? right now, we clear the conversation as soon as it's over.
+		_currentConversation -> converstationStatus = UDP_TRACKER_CONV_FINISHED;
+		//TODO remove conversation at some point
 	}
 
-	pthread_cond_signal (&__trackerData->updateCondvar);
+	pthread_cond_broadcast (&__trackerData->updateCondvar);
 	pthread_mutex_unlock(&__trackerData->lockingMutex);
-	//TODO end conversation here, and clear & free the incoming & outgoing packets. Should probably remove the conversation from the dlinkedlist as well, but it needs to be thread safe
 }
+
+/*
+ * This method is ASYNCRHONOUS!
+ */
+uint8_t udptracker_beginConversation(void* __requestPacket, udptrack_packet_type_t __conversationType, int32_t __transactionID ,int32_t __conversationExternalIdentifier, udptrack_t* __trackerData, uint8_t __shouldLock)
+{
+	udptrack_conversation_t* _newConversation = malloc(sizeof(udptrack_conversation_t));
+	_newConversation -> conversationType = __conversationType;
+	_newConversation -> converstationStatus = UDP_TRACKER_CONV_PENDING;
+	_newConversation -> conversationID = __transactionID;
+	_newConversation -> externalIdentifier = __conversationExternalIdentifier;
+
+	if (__shouldLock)
+	{
+		pthread_mutex_lock(&__trackerData->lockingMutex);
+	}
+	uint8_t _conversationInsertionResult = dlinkedlist_insertElement(_newConversation,__trackerData->trackerConversations);
+
+	if (_conversationInsertionResult == 0)
+	{
+		//TODO error
+	}
+
+	conc_queue_push(__trackerData->trackerOutgoingPacketQueue, __requestPacket);
+	_newConversation -> converstationStatus = UDP_TRACKER_CONV_STARTED;
+
+	if (__shouldLock)
+	{
+		pthread_mutex_unlock(&__trackerData->lockingMutex);
+	}
+
+	return 1;
+}
+
 
 
 

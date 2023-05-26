@@ -40,8 +40,13 @@ typedef struct
 
 	uint8_t torrentHash[20];
 
+	/*
+	 * A unique identifier for this torrent that represents this particular instance.
+	 */
+	int32_t uniqueIdentifier;
+
 } torrent_t;
 
-torrent_t* openTorrent(char* __filePath);
+torrent_t* torrent_openTorrent(char* __filePath);
 
 #endif /* TORRENTINFO_TORRENTINFO_H_ */

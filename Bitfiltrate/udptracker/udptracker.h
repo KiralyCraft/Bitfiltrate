@@ -12,10 +12,11 @@
 #include <netinet/in.h>
 #include "concurrent_queue.h"
 #include "../network/conpool.h"
-#include "dlinkedmap.h"
 
 #include "udptracker_comm.h"
 #include "udptracker_proto.h"
+
+#include "dlinkedlist.h"
 
 typedef enum
 {
@@ -37,12 +38,12 @@ typedef struct
 	//==== CONNECTIVITY ====
 	udptrack_networkconfig* trackerNetworkConfiguration;
 	conc_queue* trackerOutgoingPacketQueue;
-	dlinkedmap_t* trackerConversations;
+	dlinkedlist_t* trackerConversations;
 	//==== SPECIFICS ====
 	/*
 	 * Sent by the tracker upon connection
 	 */
-	uint64_t connectionID;
+	int64_t connectionID;
 	/*
 	 * Randomly generated peer id
 	 */
@@ -88,8 +89,17 @@ typedef struct
 {
 	udptrack_conversation_status_t converstationStatus;
 	udptrack_packet_type_t conversationType;
-	udptrack_packet_t* outgoingRequest;
-//	udptrack_packet_reply_t* incomingRequest;
+	/*
+	 * This is just the transaction ID of the outgoing packet.
+	 */
+	int32_t conversationID;
+
+	/*
+	 * An optional external identifier. This is used by external factors
+	 * to find this conversation based on this (not necessarily unique)
+	 * identifier.
+	 */
+	int32_t externalIdentifier;
 } udptrack_conversation_t;
 
 /*
@@ -107,5 +117,17 @@ udptrack_t* udptracker_create(const char* __host,uint32_t __port);
  * Returns a success value depending on the situation, returns 0 if something failed, or 1 otherwise.
  */
 uint8_t udptracker_initialize(udptrack_t* __trackerData,conpool_t* __theConnectionPool);
+
+/*
+ * Begins a conversation of the given type, containing the given data, which also contains an identifier.
+ *
+ * The request data is a generic packet which is to be sent out by the tracker. The response can then be found based
+ * on the EXTERNAL conversation identifier (different from the internal one).
+ *
+ * This method is likely to be called from external factors, therefore it's implementation should be thread safe.
+ *
+ * This method returns 0 if anything went wrong, or 1 otherwise.
+ */
+uint8_t udptracker_beginConversation(void* __requestPacket, udptrack_packet_type_t __conversationType,int32_t __transactionID, int32_t __conversationExternalIdentifier, udptrack_t* __trackerData, uint8_t __shouldLock);
 
 #endif /* UDPTRACKER_UDPTRACKER_H_ */

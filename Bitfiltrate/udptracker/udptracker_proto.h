@@ -55,8 +55,8 @@ typedef struct
 	int32_t leechCount;
 	int32_t seedCount;
 
-	uint32_t peerCount;
-	udptrack_packet_reply_data_announce_peer_t* thePeers;
+	uint32_t thePeerCount;
+	udptrack_packet_reply_data_announce_peer_t* thePeerList;
 } udptrack_packet_reply_data_announce_t;
 
 typedef struct
@@ -83,6 +83,12 @@ int32_t udptracker_proto_generateTransactionID();
  */
 udptrack_packet_t* udptracker_proto_requestConnectPacket(int32_t __transactionID);
 
+/*
+ * Build a scrape packet that is ready to be sent out to the tracker.
+ */
+udptrack_packet_t* udptracker_proto_requestScrapePacket(int64_t __connectionID,uint8_t* __torrentHash, int32_t __transactionID);
+
+aici request announce packet
 /*
  * A generic function that is intended to process received data from a socket.
  *

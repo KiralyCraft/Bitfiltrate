@@ -27,7 +27,12 @@ void _torrentCreateHash(torrent_t* __torrentData, bencode_et* __infoDictionaryVa
     EVP_MD_CTX_free(_hashContext);
 }
 
-torrent_t* openTorrent(char* __filePath)
+int32_t _torrent_getUniqueIdentifier(torrent_t* __theTorrent)
+{
+	return 0; //TODO implement
+}
+
+torrent_t* torrent_openTorrent(char* __filePath)
 {
 	torrent_t* _torrentData = malloc(sizeof(torrent_t));
 
@@ -73,6 +78,8 @@ torrent_t* openTorrent(char* __filePath)
 		//===================PROCESSING SOME INFO FOR THE TORRENT=============================
 
 		_torrentCreateHash(_torrentData,_infoDictionaryValue);
+
+		_torrentData->uniqueIdentifier = _torrent_getUniqueIdentifier(_torrentData);
 
 		return _torrentData;
 	}
