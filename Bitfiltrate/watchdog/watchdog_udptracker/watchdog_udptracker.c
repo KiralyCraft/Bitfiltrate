@@ -37,6 +37,23 @@ void watchdog_udptracker_init(torrent_t* __theTorrentData,const char* __givenTra
 }
 
 /*
+ * This comparator assumes the first argument is the key that is statically searched for, and it expects
+ * a tracker conversation on the second variable. It returns 1 when the given key matches the conversation's torrent id.
+ */
+uint8_t _watchdog_udptracker_comparator_conversation_torrentid(void* __theSearchedKey, void* __iteratedElement)
+{
+	udptrack_conversation_t* _iteratedConversation = __iteratedElement;
+	int32_t _torrentID = *((int32_t*)__theSearchedKey);
+
+	if (_torrentID == _iteratedConversation->externalIdentifier)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int f = 0;
+/*
  * This is a function which will be repeatedly called by a thread of the watchdog.
  *
  * This function will always be executed asynchronously with everything else.
@@ -54,8 +71,48 @@ void _watchdog_udptracker_executor(void* __watchdogContext)
 
 	if (_trackerData->trackerStatus == UDPTRACK_INITIALIZED)
 	{
+		if (f == 0)
+		{
+			int32_t _announceTransactionID = udptracker_proto_generateTransactionID();
+			void* _announcePacket = udptracker_proto_requestAnnouncePacket(_trackerData->connectionID,_torrentData->torrentHash,_announceTransactionID, _trackerData->peerID, _trackerData->downloaded,_trackerData->left,_trackerData->uploaded,1234);
+			uint8_t _conversationInitiatorResult = udptracker_beginConversation(_announcePacket,UDP_TRACKER_PACKET_ANNOUNCE,_announceTransactionID, _torrentData->uniqueIdentifier,_trackerData,0);
+			if (_conversationInitiatorResult == 0)
+			{
+				//TODO handle error
+			}
 
-		aici send announce
+			f=1;
+		}
+		else
+		{
+			udptrack_conversation_t* _foundConversation;
+			do
+			{
+				_foundConversation = dlinkedlist_getCustomElement(&_torrentData->uniqueIdentifier,_watchdog_udptracker_comparator_conversation_torrentid,_trackerData->trackerConversations);
+				if (_foundConversation != NULL)
+				{
+					printf("DEBUG: Fetched convo type: %d,%d\n",_foundConversation->conversationType,_foundConversation->converstationStatus);
+					udptrack_packet_reply_t* _theReplyPacket = _foundConversation->supplementalResponseData;
+					//=== PROCESSING OF DATA ===
+
+					//=== CLEANUP ===
+					uint8_t _deletionSuccessful = dlinkedlist_deleteElement(_foundConversation,_trackerData->trackerConversations);
+					if (_deletionSuccessful == 0)
+					{
+						//TODO handle deletion error
+					}
+					else
+					{
+						udptracker_proto_destroyReplyPacket(_theReplyPacket); //Destroy the reply packet contained within
+						free(_foundConversation); //Destroy the conversation
+						//TODO destroy conversations externally using an API from udptracker.h
+					}
+				}
+			}
+			while(_foundConversation != NULL);
+		}
+//
+//		aici send announce
 //		int32_t _scrapeTransactionID = udptracker_proto_generateTransactionID();
 //		void* _scrapePacket = udptracker_proto_requestScrapePacket(_trackerData->connectionID,_torrentData->torrentHash,_scrapeTransactionID);
 //		uint8_t _conversationInitiatorResult = udptracker_beginConversation(_scrapePacket,UDP_TRACKER_PACKET_SCRAPE,_scrapeTransactionID, _torrentData->uniqueIdentifier,_trackerData,0);

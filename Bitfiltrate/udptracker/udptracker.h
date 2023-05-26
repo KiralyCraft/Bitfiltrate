@@ -65,6 +65,8 @@ typedef struct
 	pthread_mutex_t lockingMutex;
 	pthread_cond_t updateCondvar;
 
+
+
 } udptrack_t;
 
 /*
@@ -100,6 +102,12 @@ typedef struct
 	 * identifier.
 	 */
 	int32_t externalIdentifier;
+
+	/*
+	 * Supplemental response data.
+	 * Configured when the conversation receives a response.
+	 */
+	void* supplementalResponseData;
 } udptrack_conversation_t;
 
 /*

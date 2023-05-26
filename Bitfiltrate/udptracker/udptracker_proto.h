@@ -88,7 +88,10 @@ udptrack_packet_t* udptracker_proto_requestConnectPacket(int32_t __transactionID
  */
 udptrack_packet_t* udptracker_proto_requestScrapePacket(int64_t __connectionID,uint8_t* __torrentHash, int32_t __transactionID);
 
-aici request announce packet
+/*
+ * Build an announce packet that is ready to be sent out to the tracker.
+ */
+udptrack_packet_t* udptracker_proto_requestAnnouncePacket(int64_t __connectionID,uint8_t* __torrentHash, int32_t __transactionID, uint8_t* __peerID, uint64_t __downloaded,uint64_t __left,uint64_t __uploaded,uint16_t __thePort);
 /*
  * A generic function that is intended to process received data from a socket.
  *

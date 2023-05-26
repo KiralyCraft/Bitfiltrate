@@ -58,6 +58,47 @@ udptrack_packet_t* udptracker_proto_requestScrapePacket(int64_t __connectionID,u
 	return _newPacket;
 }
 
+udptrack_packet_t* udptracker_proto_requestAnnouncePacket(int64_t __connectionID,uint8_t* __torrentHash, int32_t __transactionID, uint8_t* __peerID, uint64_t __downloaded,uint64_t __left, uint64_t __uploaded,uint16_t __thePort)
+{
+	//==== SETTING UP THE PACKET ====
+	udptrack_packet_t* _newPacket = malloc(sizeof(udptrack_packet_t));
+	size_t _packetDataLength = sizeof(int64_t)+sizeof(int32_t)*2+sizeof(uint8_t)*20+sizeof(uint8_t)*20+sizeof(int64_t)*3+sizeof(int32_t)*4+sizeof(int16_t)*2;
+	uint8_t* _packetData = malloc(_packetDataLength);
+	_newPacket -> packetData = _packetData;
+	_newPacket -> packetSize = _packetDataLength;
+	//==== SETTING THE DATA ====
+
+	((int64_t*)_packetData)[0] = htobe64(__connectionID);
+	((int32_t*)_packetData)[2] = htobe32(1);
+	((int32_t*)_packetData)[3] = htobe32(__transactionID);
+
+	//==== SETTING THE INFO_HASH ====
+	uint8_t* _packetDataOffset = _packetData + sizeof(int32_t)*4;
+	memcpy(_packetDataOffset,__torrentHash, sizeof(uint8_t)*20);
+	_packetDataOffset += sizeof(uint8_t)*20;
+	//==== SETTING THE PEER_ID ====
+	memcpy(_packetDataOffset,__peerID, sizeof(uint8_t)*20);
+	_packetDataOffset += sizeof(uint8_t)*20;
+	//==== SETTING STATS ====
+	((int64_t*)_packetDataOffset)[0] = htobe64(__downloaded);
+	((int64_t*)_packetDataOffset)[1] = htobe64(__left);
+	((int64_t*)_packetDataOffset)[2] = htobe64(__uploaded);
+	_packetDataOffset += sizeof(int64_t)*3;
+	//==== SETTING MISC ====
+	((int32_t*)_packetDataOffset)[0] = htobe32(0); //Event - Always send "None"
+	((int32_t*)_packetDataOffset)[1] = htobe32(0); //IP - Always send "use my ip"
+	((int32_t*)_packetDataOffset)[2] = htobe32(0); //Key - Whatever this is. "Randomized by the client", I have no idea
+	((int32_t*)_packetDataOffset)[3] = htobe32(-1); //Number of peers wanted
+	_packetDataOffset += sizeof(int32_t)*4;
+	//==== PORT ====
+	((uint16_t*)_packetDataOffset)[0] = htobe16(__thePort); //Random port
+	((uint16_t*)_packetDataOffset)[1] = htobe16(0); //Extensions
+
+	return _newPacket;
+
+}
+
+
 
 void* _udptracker_proto_processConnectPacket(udptrack_packet_t* __receivedPacketData);
 void* _udptracker_proto_processAnnouncePacket(udptrack_packet_t* __receivedPacketData);
@@ -114,11 +155,13 @@ void* udptracker_proto_processRawGenericPacket(void* __dataBundle)
 	udptracker_proto_destroyPacket(_receivedActualPacket); //Destroy the actual packet data, because it has been processed into the nicer form
 	//=== SERVING THE BUILT PACKET ===
 
-	void (*_upperProcessingFunction)(void*,void*) = _optionalArguments;
-	_upperProcessingFunction(_executionContext,_packetReply);
-
-	//=== CLEANING THE NICELY WRAPPED PACKET ===
-	udptracker_proto_destroyReplyPacket(_packetReply); //Destroy the nicely wrapped packet too, because it has been processed
+	uint8_t (*_upperProcessingFunction)(void*,void*) = _optionalArguments;
+	uint8_t _shouldClear = _upperProcessingFunction(_executionContext,_packetReply);
+	if (_shouldClear == 1) //Clear the packet if told so. If not, it means the packet might still be useful after processing.
+	{
+		//=== CLEANING THE NICELY WRAPPED PACKET ===
+		udptracker_proto_destroyReplyPacket(_packetReply); //Destroy the nicely wrapped packet too, because it has been processed
+	}
 	return NULL;
 }
 
@@ -160,8 +203,8 @@ void* _udptracker_proto_processAnnouncePacket(udptrack_packet_t* __receivedPacke
 
 	for (uint32_t _peerIndex = 0; _peerIndex < _expectedPeerCount; _peerIndex++)
 	{
-		_replyAnnounce -> thePeerList[_peerIndex].peerIP = be32toh(((int32_t*)(_receivedPacketPeerOffset + _peerIndex * _peerPacketSize))[0]);
-		_replyAnnounce -> thePeerList[_peerIndex].peerPort = be32toh(((uint16_t*)(_receivedPacketPeerOffset + _peerIndex * _peerPacketSize + sizeof(int32_t)))[0]);
+		_replyAnnounce -> thePeerList[_peerIndex].peerIP = ((int32_t*)(_receivedPacketPeerOffset + _peerIndex * _peerPacketSize))[0]; //IP addresses should be BE anyway
+		_replyAnnounce -> thePeerList[_peerIndex].peerPort = be16toh(((uint16_t*)(_receivedPacketPeerOffset + _peerIndex * _peerPacketSize + sizeof(int32_t)))[0]);
 	}
 
 	return _replyAnnounce;
@@ -204,7 +247,7 @@ void udptracker_proto_destroyReplyPacket(udptrack_packet_reply_t* __thePacket)
 
 	if (_replyPacketType == UDP_TRACKER_PACKET_CONNECT)
 	{
-		free(__thePacket);
+//		free(__thePacket);
 	}
 	else if (_replyPacketType == UDP_TRACKER_PACKET_ANNOUNCE)
 	{
@@ -214,7 +257,7 @@ void udptracker_proto_destroyReplyPacket(udptrack_packet_reply_t* __thePacket)
 	}
 	else if (_replyPacketType == UDP_TRACKER_PACKET_SCRAPE)
 	{
-		free(__thePacket);
+//		free(__thePacket);
 	}
 	else if (_replyPacketType == UDP_TRACKER_PACKET_ERROR)
 	{
@@ -222,5 +265,6 @@ void udptracker_proto_destroyReplyPacket(udptrack_packet_reply_t* __thePacket)
 		free(_replyError->errorMessage);
 		free(_replyError);
 	}
+	free(__thePacket);
 }
 

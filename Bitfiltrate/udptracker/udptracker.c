@@ -77,7 +77,7 @@ udptrack_t* udptracker_create(const char* __givenTrackerURL,uint32_t __givenTrac
     return _theTrackerInfo;
 }
 
-void _udptracker_processResponseAction(udptrack_t* __tracketData,udptrack_packet_reply_t* __packetReply);
+uint8_t _udptracker_processResponseAction(udptrack_t* __tracketData,udptrack_packet_reply_t* __packetReply);
 
 uint8_t udptracker_initialize(udptrack_t* __trackerData,conpool_t* __theConnectionPool)
 {
@@ -137,10 +137,15 @@ uint8_t _udptracker_conversationIDComparator(void* __searchedKey, void* __iterat
 /*
  * This helper function processes the actual data received from the tracker, and should update the status accordingly.
  *
+ * For packets that are destined to be used by something else (such as a watchdog), this method should not empty the packets, and neither the conversations.
+ * For other packets and their subsequent conversations, the conversations should be cleared and emptied.
+ *
  * This function is ALWAYS CALLED ASYNCHRONOUSLY.
  */
-void _udptracker_processResponseAction(udptrack_t* __trackerData,udptrack_packet_reply_t* __packetReply)
+uint8_t _udptracker_processResponseAction(udptrack_t* __trackerData,udptrack_packet_reply_t* __packetReply)
 {
+	uint8_t _shouldClear = 1;
+
 	int32_t _transactionID = __packetReply -> packetTransactionID;
 
 	pthread_mutex_lock(&__trackerData->lockingMutex);
@@ -156,24 +161,26 @@ void _udptracker_processResponseAction(udptrack_t* __trackerData,udptrack_packet
 	}
 	else if (__packetReply -> packetType == UDP_TRACKER_PACKET_ANNOUNCE)
 	{
-		print astea si build announce sa vedem daca merge
-//		udptrack_packet_reply_data_connect_t
+		udptrack_packet_reply_data_announce_t* _packetReplyAnnounce = __packetReply -> packetData;
+		_shouldClear = 0;
 		printf("Announce received\n");
 	}
 	else if (__packetReply -> packetType == UDP_TRACKER_PACKET_SCRAPE)
 	{
 		udptrack_packet_reply_data_scrape_t* _packetReplyScrape = __packetReply -> packetData;
-		printf("Scrape received! %d %d %d\n",_packetReplyScrape->completeCount,_packetReplyScrape->downloadCount,_packetReplyScrape->incompleteCount);
+		_shouldClear = 0;
+		printf("Scrape received!");
 	}
 	else if (__packetReply -> packetType == UDP_TRACKER_PACKET_ERROR)
 	{
-		printf("Error received\n");
 		udptrack_packet_reply_data_error_t* _packetReplyError = __packetReply -> packetData;
+		printf("Error received\n");
 		//TODO handle the error packet, log it perhaps?
 	}
 
 	//=== UPDATING THE CONVERSATION STATUS ===
 	udptrack_conversation_t* _currentConversation = dlinkedlist_getCustomElement(&_transactionID,_udptracker_conversationIDComparator,__trackerData->trackerConversations);
+	_currentConversation->supplementalResponseData = __packetReply; //Set the packet reply inside the conversation data.
 	if (_currentConversation == NULL)
 	{
 		printf("TODO: No es bueno, convo %d not found when process!!\n",_transactionID);
@@ -181,11 +188,27 @@ void _udptracker_processResponseAction(udptrack_t* __trackerData,udptrack_packet
 	else
 	{
 		_currentConversation -> converstationStatus = UDP_TRACKER_CONV_FINISHED;
-		//TODO remove conversation at some point
+
+		if (_shouldClear == 1)
+		{
+			uint8_t _clearConversationSuccess = dlinkedlist_deleteElement(_currentConversation,__trackerData->trackerConversations);
+			if (_clearConversationSuccess == 1)
+			{
+				free(_currentConversation); //Also free the conversation itself, it it has been successfully removed from the conversation list.
+			}
+			else
+			{
+				//TODO handle error
+			}
+		}
+
+//		return true sau false, pentru anumite nu da clear la conversatii (si nici la pachete), dar pentru altele da.
 	}
 
 	pthread_cond_broadcast (&__trackerData->updateCondvar);
 	pthread_mutex_unlock(&__trackerData->lockingMutex);
+
+	return _shouldClear;
 }
 
 /*
