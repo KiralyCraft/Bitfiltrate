@@ -10,6 +10,10 @@
 #include "concurrent_queue.h"
 #include "watchdog/watchdog.h"
 #include "watchdog/watchdog_udptracker/watchdog_udptracker.h"
+#include "watchdog/watchdog_peerswarm/watchdog_peerswarm.h"
+
+#include "swarm/swarm.h"
+#include "swarm/tcpswarm/tcpswarm.h"
 
 int main()
 {
@@ -34,10 +38,17 @@ int main()
 //
 //	udptracker_initialize(theTracker,theConnectionPool);
 
+//	swarm_t* _thePeerSwarm = swarm_createPeerSwarm();
+
 	watchdog_t* _theWatchdog = watchdog_createWatchdogSupervisor();
+
+
 	conpool_t* theConnectionPool = conpool_createPool();
+	conpool_t* theSwarmConnectionPool = conpool_createPool();
 	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.00-amd64.iso.torrent");
-	watchdog_udptracker_init(_theTorrent,"tracker.openbittorrent.com",6969,_theWatchdog,theConnectionPool);
+	watchdog_peerswarm_t* _thePeerSwarm = watchdog_peerswarm_init(_theWatchdog,_theTorrent,theSwarmConnectionPool);
+
+	watchdog_udptracker_init(_theTorrent,"tracker.openbittorrent.com",6969,_theWatchdog,_thePeerSwarm,theConnectionPool);
 
 	getchar();
 }

@@ -11,11 +11,15 @@
 #include "../../torrentinfo/torrentinfo.h"
 #include "../../network/conpool.h"
 #include "../watchdog.h"
+
+#include "../../swarm/peer/peer_networkdetails.h"
+#include "../../swarm/swarm.h"
+
 #include <stdlib.h>
 
 void _watchdog_udptracker_executor(void* __watchdogContext);
 
-void watchdog_udptracker_init(torrent_t* __theTorrentData,const char* __givenTrackerURL,uint32_t __givenTrackerPort,watchdog_t* __theWatchdog,conpool_t* __theConnectionPool)
+void watchdog_udptracker_init(torrent_t* __theTorrentData,const char* __givenTrackerURL,uint32_t __givenTrackerPort,watchdog_t* __theWatchdog,watchdog_peerswarm_t* __peerSwarm,conpool_t* __theConnectionPool)
 {
 	udptrack_t* _theTracker = udptracker_create(__givenTrackerURL,__givenTrackerPort);
 	uint8_t _initResult = udptracker_initialize(_theTracker,__theConnectionPool);
@@ -28,6 +32,7 @@ void watchdog_udptracker_init(torrent_t* __theTorrentData,const char* __givenTra
 	watchdog_udptracker_t* _watchdogData = malloc(sizeof(watchdog_udptracker_t));
 	_watchdogData->theTrackerConnection = _theTracker;
 	_watchdogData->theTorrentData = __theTorrentData;
+	_watchdogData->thePeerSwarmWatchdog = __peerSwarm;
 
 	uint8_t _submissionResult = watchdog_submitWatchdog(_watchdogData,_watchdog_udptracker_executor,__theWatchdog);
 	if (_submissionResult == 0)
@@ -63,6 +68,7 @@ void _watchdog_udptracker_executor(void* __watchdogContext)
 	watchdog_udptracker_t* _watchdogData = __watchdogContext;
 	udptrack_t* _trackerData = _watchdogData->theTrackerConnection;
 	torrent_t* _torrentData = _watchdogData->theTorrentData;
+	watchdog_peerswarm_t* _thePeerSwarmWatchdog = _watchdogData->thePeerSwarmWatchdog;
 
 	//=== PREPARE FOR WATCHDOG PROCESSING ===
 	pthread_mutex_lock(&_trackerData->lockingMutex);
@@ -94,6 +100,26 @@ void _watchdog_udptracker_executor(void* __watchdogContext)
 					printf("DEBUG: Fetched convo type: %d,%d\n",_foundConversation->conversationType,_foundConversation->converstationStatus);
 					udptrack_packet_reply_t* _theReplyPacket = _foundConversation->supplementalResponseData;
 					//=== PROCESSING OF DATA ===
+					if (_foundConversation->converstationStatus == UDP_TRACKER_CONV_FINISHED)
+					{
+						//=== SUBMITTING PEERS FROM ANNOUNCE TO THE SWARM ===
+						if (_foundConversation->conversationType == UDP_TRACKER_PACKET_ANNOUNCE)
+						{
+							//TODO handle the rest of the announce packet, such as the rennounce interval and everything else
+							udptrack_packet_reply_data_announce_t* _announceReplyData = _theReplyPacket->packetData;
+							for (uint32_t _peerIterator = 0;_peerIterator < _announceReplyData->thePeerCount; _peerIterator++)
+							{
+								udptrack_packet_reply_data_announce_peer_t _peerData = _announceReplyData->thePeerList[_peerIterator];
+
+								peer_networkconfig_h* _peerNetworkConfig = peer_networkdetails_generatePeerDetails(_peerData.peerIP,_peerData.peerPort);
+								watchdog_peerswarm_ingestPeer(_thePeerSwarmWatchdog,_peerNetworkConfig,_torrentData);
+							}
+						}
+					}
+					else
+					{
+						//TODO handle conversations that have not been finished, but rahter interrupted or timed out
+					}
 
 					//=== CLEANUP ===
 					uint8_t _deletionSuccessful = dlinkedlist_deleteElement(_foundConversation,_trackerData->trackerConversations);
