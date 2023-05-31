@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include <pthread.h>
+#include "concurrent_queue.h"
 #include "../../peer/peer_networkdetails.h"
 
 typedef struct
@@ -24,6 +26,12 @@ typedef struct
 	uint8_t peerChoking;
 	uint8_t peerInterested;
 
-} tcppeer_h;
+	//=== INTERNAL USE ONLY ===
+	pthread_mutex_t syncMutex;
+	pthread_cond_t syncCondvar;
+
+} tcppeer_t;
+
+
 
 #endif /* SWARM_TCPPEER_H_ */

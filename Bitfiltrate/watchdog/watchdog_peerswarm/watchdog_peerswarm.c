@@ -16,7 +16,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext);
 watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool)
 {
 	//=== SETTING UP THE TCP SWARM ===
-	swarm_definition_t* _theSwarmDefinition = tcpswarm_createDefinition();
+	swarm_definition_t* _theSwarmDefinition = tcpswarm_createDefinition(swarm_postProcessPeerData);
 	swarm_t* _peerSwarm = swarm_createPeerSwarm(_theSwarmDefinition, __torrentHash, __theConnectionPool);
 
 	//=== SETTING UP THE WATCHDOG CONTEXT ===
@@ -45,10 +45,15 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 	watchdog_peerswarm_t* _watchdogData = __watchdogContext;
 	//Fetch replies from here
 
+	//TODO make this thing wait on a conditional variable for modifications. Also submit this conditonal variable to the swarm itself.
 	uint32_t _pendingPeerCount = conc_queue_count(_watchdogData->peerIngestionQueue);
 	if (_pendingPeerCount > 0)
 	{
-		//TODO lock the swarm
+		printf("WATCHDOG popping peer for ingestion\n");
+		peer_networkconfig_h* _poppedPeerConfiguration = conc_queue_pop(_watchdogData->peerIngestionQueue);
+		swarm_ingestPeer(_watchdogData->thePeerSwarm,_poppedPeerConfiguration); //This method is thread safe
+
+		//TODO process packets which the swarm itself has post-processed
 
 		//TODO unlock the swarm
 	}
@@ -57,6 +62,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 
 void watchdog_peerswarm_ingestPeer(watchdog_peerswarm_t* __thePeerSwarmWatchdog, peer_networkconfig_h* __peerConfig,torrent_t* __torrentData)
 {
+	printf("WATCHDOG: Ingesting peer\n");
 	//The concurrent queue always locks and is, as the name suggests, concurrent.
 	conc_queue_push(__thePeerSwarmWatchdog->peerIngestionQueue,__peerConfig);
 }

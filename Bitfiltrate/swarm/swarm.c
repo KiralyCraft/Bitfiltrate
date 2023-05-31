@@ -11,6 +11,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+
+#include "swarm_actions.h"
 
 swarm_t* swarm_createPeerSwarm(swarm_definition_t* __theSwarmDefinition,torrent_t* __theTorrentInfo,conpool_t* __connectionPool)
 {
@@ -19,18 +22,53 @@ swarm_t* swarm_createPeerSwarm(swarm_definition_t* __theSwarmDefinition,torrent_
 
 	_newSwarm->currentSwarmDefinition = __theSwarmDefinition;
 	_newSwarm->currentPeerData = dlinkedlist_createList();
-	aici am ramas, pentru create swarm cu connection pool si toate cele; connection pool vine din argumente
-	cand se face ingest la un peer, submit a new connection in pool care are un income function comun (tip network)
-	si un processing function de undeva din "protocol", care apoi aduce rezulatele aici dupa procesare, asemanator cu udp tracker.
+	_newSwarm->theConnectionPool = __connectionPool;
 
-	la inceput, cand se face create la peer swarm, ar trebui sa se construiascsa si un anume bitfield sau infromatiile neceare.
-	acum ca vad, asta e de fapt echivalentul al udptracker, deci aici se face procesarea de la ce o trimis protocolul. astea de aici apoi dau
-	(sau tin) cumva la watchdog, ca sa scrie fisierele pe disk.
+	pthread_mutex_init(&_newSwarm->peerManipulationMutex,NULL);
+//	aici am ramas, pentru create swarm cu connection pool si toate cele; connection pool vine din argumente
+//	cand se face ingest la un peer, submit a new connection in pool care are un income function comun (tip network)
+//	si un processing function de undeva din "protocol", care apoi aduce rezulatele aici dupa procesare, asemanator cu udp tracker.
+//
+//	la inceput, cand se face create la peer swarm, ar trebui sa se construiascsa si un anume bitfield sau infromatiile neceare.
+//	acum ca vad, asta e de fapt echivalentul al udptracker, deci aici se face procesarea de la ce o trimis protocolul. astea de aici apoi dau
+//	(sau tin) cumva la watchdog, ca sa scrie fisierele pe disk.
+//
+//	oare sa nu scrie de fapt astea pe disk cumva? direct de aici? vedem.
 
-	oare sa nu scrie de fapt astea pe disk cumva? direct de aici? vedem.
+	return _newSwarm;
 }
 uint8_t swarm_ingestPeer(swarm_t* __theSwarm, peer_networkconfig_h* __peerDetails)
 {
-	swarm_definition_t* theSwarmDefinition = __theSwarm->currentSwarmDefinition;
-	//add the thing result of the function process to the list
+	pthread_mutex_lock(&__theSwarm->peerManipulationMutex);
+	swarm_definition_t* _theSwarmDefinition = __theSwarm->currentSwarmDefinition;
+	conpool_t* _theConnectionPool = __theSwarm->theConnectionPool;
+	dlinkedlist_t* _thePeerData = __theSwarm->currentPeerData;
+	//TODO check if the peer doesn't already exist
+	void* _theImplementationSpecificPeerRepresentation = _theSwarmDefinition->peerIngestFunction(__peerDetails,_theSwarmDefinition,_theConnectionPool);
+	uint8_t _insertionResult = dlinkedlist_insertElement(_theImplementationSpecificPeerRepresentation,_thePeerData);
+
+	if (_insertionResult == 0)
+	{
+		pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
+		//TODO dis-ingest the peer if it failed to be added
+		return 0;
+	}
+	else
+	{
+		uint8_t _peerSubmissionResult = swarm_connectPeer(__theSwarm,_theImplementationSpecificPeerRepresentation);
+		if (_peerSubmissionResult == 0)
+		{
+			pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
+			printf("Aw no couldn't connect peer when ingesting :(\n");
+			return 0;
+		}
+	}
+	pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
+	printf("Peer ingested!\n");
+	return 1;
+}
+
+void swarm_postProcessPeerData(void* __thePeerData)
+{
+	//TODO
 }

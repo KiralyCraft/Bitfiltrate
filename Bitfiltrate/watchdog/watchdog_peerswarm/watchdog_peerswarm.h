@@ -24,7 +24,7 @@ typedef struct
 watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool);
 
 /*
- * This is a function which should accept the given peer and add it to the watchdog.
+ * This is a function which should accept the given peer and add it to the watchdog (and therefore the pool).
  *
  * This function will always be executed asynchronously with everything else.
  * TODO: Currently this method doesn't differentiate between torrents submitted, and it assumes they are all the same (effectively ignoring the torrentdata)

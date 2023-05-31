@@ -45,8 +45,8 @@ typedef struct
 //=== ANNOUNCE REPLY PACKET ===
 typedef struct
 {
-	int32_t peerIP;
-	uint16_t peerPort;
+	int32_t peerIP; //Network-Byte order
+	uint16_t peerPort; //Host-Byte order
 } udptrack_packet_reply_data_announce_peer_t;
 
 typedef struct

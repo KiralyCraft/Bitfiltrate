@@ -13,6 +13,7 @@
 typedef enum
 {
 	PEER_NEWBORN, //The status a new peer structure gets when it is first initialized
+	PEER_PENDING, //The status of a new peer that is currently connecting
 	PEER_INITIALIZED, //The status a peer is updated to after being submitted to a connection pool
 	PEER_CONNECTED, //The status a peer gets after having done a successful handshake
 	PEER_ERROR //The general error status

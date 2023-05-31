@@ -45,7 +45,7 @@ int main()
 
 	conpool_t* theConnectionPool = conpool_createPool();
 	conpool_t* theSwarmConnectionPool = conpool_createPool();
-	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.00-amd64.iso.torrent");
+	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.01-amd64.iso.torrent");
 	watchdog_peerswarm_t* _thePeerSwarm = watchdog_peerswarm_init(_theWatchdog,_theTorrent,theSwarmConnectionPool);
 
 	watchdog_udptracker_init(_theTorrent,"tracker.openbittorrent.com",6969,_theWatchdog,_thePeerSwarm,theConnectionPool);

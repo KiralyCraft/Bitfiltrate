@@ -15,6 +15,7 @@ void* conpool_executorSendingFunction(void* __providedData)
 	conpool_connection_details_t* _connectionDetails = __providedData;
 
 	//TODO implement a proper stopping technique for clean shutdowns
+	//TODO implement error checking for the outgoing function. If anything happens, kill both this and the incoming function
 	while(1)
 	{
 		void* _poppedData = conc_queue_pop(_connectionDetails->outgoingPacketQueue); //This should be a blocking operation
