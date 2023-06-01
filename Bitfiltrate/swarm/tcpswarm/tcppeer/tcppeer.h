@@ -32,11 +32,17 @@ typedef struct
 	 * when this peer is no longer useful, or upon destruction.
 	 *
 	 * The bytes stored in this representation of the bitfield are using the HOST representation.
-	 * EG: Bit 0 of byte 0 is piece #0, bit 1 of byte 0 is piece #1, and so on.
+	 * EG: Bit 7 of byte 0 is piece #0, bit 6 of byte 0 is piece #1, and so on.
 	 */
 	dlinkedlist_t* peerBitfield;
 
-	//=== INTERNAL USE ONLY, DURING COMMS ===
+	/*
+	 * This queue holds data for the this peer, that it has been sent over the network.
+	 * No order is done here, and this data should be evacuated by an utility as soon as possible.
+	 */
+	conc_queue* peerIncomingPieceData;
+
+	//=== INTERNAL USE ONLY===
 	pthread_mutex_t bitfieldMutex;
 	pthread_mutex_t syncMutex;
 	pthread_cond_t syncCondvar;

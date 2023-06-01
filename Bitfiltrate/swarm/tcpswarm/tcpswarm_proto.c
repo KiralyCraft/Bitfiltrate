@@ -9,10 +9,90 @@
 #include "tcpswarm_comm.h"
 #include "concurrent_queue.h"
 #include "dlinkedlist.h"
+#include "tcpswarm_packet_wrappers.h"
 
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+
+/*
+ * This is a helper function that gets called by the processing function. It's purpose is to serve
+ * as an encapsulated way of processing data which automatically gets cleared afterwards, such as the packaged packet.
+ *
+ * This function is always called ASYNCHRONOUSLY, just like the wrapper.
+ */
+void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcppeer_t* __thePeer,void* __optionalArguments)
+{
+	//=== PROCESSING THE PACKET ===
+	uint8_t _packetTypeID = __packagedPacket->packetData[0];
+	uint8_t* _packetDataOffset =  __packagedPacket->packetData+1;
+
+	printf("Got packet of type %d\n",_packetTypeID);
+	if (_packetTypeID == 0) //Choked
+	{
+		__thePeer->peerChoking = 1; //TODO change these things to functions inside the peer definition, and call functions to set them
+	}
+	else if (_packetTypeID == 1) //Unchoked
+	{
+		__thePeer->peerChoking = 0;
+	}
+	else if (_packetTypeID == 2) //Interested
+	{
+		__thePeer->peerInterested = 1;
+	}
+	else if (_packetTypeID == 3) //Not Interested
+	{
+		__thePeer->peerInterested = 0;
+	}
+	else if (_packetTypeID == 4) //Have
+	{
+		uint32_t _pieceIndex = be32toh(((uint32_t*)_packetDataOffset)[0]);
+		uint8_t _setPieceResult = tcppeer_setPiece(__thePeer,_pieceIndex,1);
+		if (_setPieceResult == 0)
+		{
+			; //TODO handle this
+		}
+		printf("Received HAVE\n");
+	}
+	else if (_packetTypeID == 5) //Bitfield
+	{
+		size_t _receivedBitfieldSize = (__packagedPacket->packetSize - 1)/(sizeof(uint8_t));
+
+		for (size_t _bitfieldByteIterator = 0; _bitfieldByteIterator < _receivedBitfieldSize; _bitfieldByteIterator++)
+		{
+			uint8_t _insertionResult = tcppeer_setBitfieldByte(__thePeer,_bitfieldByteIterator,_packetDataOffset[_bitfieldByteIterator]);
+			if (_insertionResult == 0)
+			{
+				printf("Failed to add bitfield\n");
+				; //TODO handle error inserting byte of bitfield
+			}
+		}
+	}
+	else if (_packetTypeID == 6) //Request - Not implemented
+	{
+		; //TODO tell them politely yet firmly to go themselves, we never answer requests
+	}
+	else if (_packetTypeID == 7) //Piece - Actual incoming data
+	{
+		tcpswarm_proto_packet_piece* _theConstructedPiece = malloc(sizeof(tcpswarm_proto_packet_piece));
+		_theConstructedPiece->thePieceIndex = be32toh(((uint32_t*)_packetDataOffset)[0]);
+		_theConstructedPiece->theOffsetWithinPiece = be32toh(((uint32_t*)_packetDataOffset)[1]);
+		_theConstructedPiece->theDataLength = __packagedPacket->packetSize - sizeof(uint32_t)*2 - 1;
+
+		_theConstructedPiece->theData = malloc(_theConstructedPiece->theDataLength);
+		memcpy(_theConstructedPiece->theData, _packetDataOffset + sizeof(uint32_t)*2, _theConstructedPiece->theDataLength);
+
+		conc_queue_push(__thePeer->peerIncomingPieceData,_theConstructedPiece);
+	}
+	else if (_packetTypeID == 8) //Cancel - Not implemnted
+	{
+		; //TODO never needed, we never seed
+	}
+	else if (_packetTypeID == 9) //DHT Port - Not implemented
+	{
+		; //TODO what the hell is this?
+	}
+}
 
 /*
  * This function is always called ASYNCHRONOUSLY, independent of everything else.
@@ -24,7 +104,7 @@ void* _tcpswarm_processingFunction(void* __dataBundle)
 
 	void* _rawGenericPacket = _splitDataBundle[0];
 	void* _executionContext = _splitDataBundle[1];
-	void* _optionalArguments = _splitDataBundle[2];
+	void* _optionalArguments = _splitDataBundle[2]; //this is the postprocessing function
 
 	free(__dataBundle);
 
@@ -38,51 +118,14 @@ void* _tcpswarm_processingFunction(void* __dataBundle)
 	{
 		tcpswarm_packet_t* _packagedPacket = _rawGenericPacket;
 		tcppeer_t* _thePeer = _executionContext;
-		//=== PROCESSING THE PACKET ===
-		uint8_t _packetTypeID = _packagedPacket->packetData[0];
 
-		printf("Got packet of type %d\n",_packetTypeID);
-		if (_packetTypeID == 0)
-		{
-			_thePeer->peerChoking = 1; //TODO change these things to functions inside the peer definition, and call functions to set them
-		}
-		else if (_packetTypeID == 1)
-		{
-			_thePeer->peerChoking = 0;
-		}
-		else if (_packetTypeID == 2)
-		{
-			_thePeer->peerInterested = 1;
-		}
-		else if (_packetTypeID == 3)
-		{
-			_thePeer->peerInterested = 0;
-		}
-		else if (_packetTypeID == 4)
-		{
-			//TODO add info to bitfield
-		}
-		else if (_packetTypeID == 5)
-		{
-			size_t _receivedBitfieldSize = (_packagedPacket->packetSize - 1)/(sizeof(uint8_t));
-			uint8_t* _bitfieldDataOffset = _packagedPacket->packetData + 1;
+		_tcpswarm_actualProcessingFunction(_packagedPacket,_thePeer,_optionalArguments);
 
-			for (size_t _bitfieldByteIterator = 0; _bitfieldByteIterator < _receivedBitfieldSize; _bitfieldByteIterator++)
-			{
-				uint8_t _insertionResult = tcppeer_setBitfieldByte(_thePeer,_bitfieldByteIterator,_bitfieldDataOffset[_bitfieldByteIterator]);
-				if (_insertionResult == 0)
-				{
-					printf("Failed to add bitfield\n");
-					; //TODO handle error inserting byte of bitfield
-				}
-			}
-		}
-
-//		receive bitfields from peers, and keep track of them. then, it may be up to the watchdog (possibly notify it) that
-//				an update has been received. then, attempt to request data with various piece sizes, see what sticks.
-//		beware that some clients may not send the whole bitfield, but rather send a few and then continue with "have" pieces
-
+		free(_packagedPacket->packetData);
+		free(_packagedPacket);
 	}
+
+	return NULL;
 }
 
 /*

@@ -30,9 +30,6 @@
 uint8_t _tcpswarm_peerInitialize(tcppeer_t* __thePeerConfiguration)
 {
 	//Ever since we've moved eager initialization to it's lazy counterpart, this method doesn't really do anything now.
-	pthread_mutex_init(&(__thePeerConfiguration->syncMutex),NULL);
-	pthread_cond_init(&(__thePeerConfiguration->syncCondvar),NULL);
-
 	return 1;
 }
 /*

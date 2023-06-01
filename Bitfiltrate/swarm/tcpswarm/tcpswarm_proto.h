@@ -11,6 +11,12 @@
 #include "../swarm_message_types.h"
 #include <stdint.h>
 
+
+
+/*
+ * The processing function which gets called with neatly wrapped packages from the network.
+ * This function should clear the data that it receives, such as the packet data (but of course not all arguments)
+ */
 void* _tcpswarm_processingFunction(void* __rawGenericPacket);
 
 /*

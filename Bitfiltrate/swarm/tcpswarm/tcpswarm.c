@@ -41,7 +41,10 @@ void* _tcpswarm_peerIngestFunction(peer_networkconfig_h* __thePeerConnectionDeta
 	_theTCPPeer -> peerInterested = 0; //TODO move these things to the peer class itself, along with the initialization of other mutexes
 	_theTCPPeer -> peerNetworkConfig = __thePeerConnectionDetails;
 	_theTCPPeer -> peerBitfield = dlinkedlist_createList();
+	conc_queue_init(&(_theTCPPeer -> peerIncomingPieceData));
 	pthread_mutex_init(&(_theTCPPeer ->bitfieldMutex),NULL);
+	pthread_mutex_init(&(_theTCPPeer->syncMutex),NULL);
+	pthread_cond_init(&(_theTCPPeer->syncCondvar),NULL);
 
 	//=== INITIALISE COMMUNICATION INTERNALS ===
 	uint8_t _peerInitializationResult = _tcpswarm_peerInitialize(_theTCPPeer);

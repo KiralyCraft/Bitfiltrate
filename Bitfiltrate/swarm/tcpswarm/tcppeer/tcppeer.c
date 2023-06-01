@@ -110,9 +110,7 @@ uint8_t tcppeer_setPiece(tcppeer_t* __thePeer,size_t __thePieceIndex,uint8_t __h
 	else
 	{
 		uint8_t _pieceByteDataCopy = *((uint8_t*)dlinkedlist_getPosition(_pieceBytePosition, _bitfieldList)); //No need to check for NULL, since we've checked the counts
-
 		uint8_t _pieceByteDataMasked = _pieceByteDataCopy | _pieceByteMask;
-
 		_resultToReturn = _tcppeer_setBitfieldByteUnsafe(__thePeer,_pieceBytePosition,_pieceByteDataMasked);
 
 	}
