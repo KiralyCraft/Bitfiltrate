@@ -87,7 +87,7 @@ void _tcpswarm_outgoingFunction(void* __socketDescriptor, void* __outgoingData, 
 
 	if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_ERROR)
 	{
-		return; //If the peer is currently an error, do not bother to send data to it anymore.
+		return; //If the peer is currently an error, do not bother to send data to it anymore, despite being asked to do so.
 	}
 
 	if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_NEWBORN) //If we are attempting to send data to a peer, but no actual connection has been established yet
@@ -130,6 +130,30 @@ void _tcpswarm_outgoingFunction(void* __socketDescriptor, void* __outgoingData, 
 	free(_theActualOutgoingData);
 	free(_theOutgoingPacket);
 }
+
+/*
+ * This is a helper function that reads the exact amount of bytes in the specified buffer.
+ * This function requires the socket descriptor, the buffer to read the bytes into, and the amount of bytes to read exactly.
+ * This function WILL BLOCK until the exact amount of bytes read has been reached.
+ * In the event of a communication failure, this function returns 0. Otherwise it returns 1.
+ */
+uint8_t _tcpswarm_readExactByteCount(int __thePeerSocket,void* __theBuffer,size_t __byteCountToRead)
+{
+	size_t _totalBytesRead = 0;
+	void* _bufferLocation = __theBuffer;
+
+	while (_totalBytesRead < __byteCountToRead)
+	{
+		int32_t _bytesRead = read(__thePeerSocket, _bufferLocation + _totalBytesRead, __byteCountToRead - _totalBytesRead);
+		if (_bytesRead == -1)
+		{
+			return 0;
+		}
+		_totalBytesRead += _bytesRead;
+	}
+	return 1;
+}
+
 void* _tcpswarm_incomingFunction(void* __socketDescriptor, void* __optionalArgument)
 {
 	tcppeer_t* _thePeerDetails = __socketDescriptor;
@@ -145,26 +169,78 @@ void* _tcpswarm_incomingFunction(void* __socketDescriptor, void* __optionalArgum
 	//=== PROCESSING ACTUAL DATA ===
 	if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_INITIALIZED) //The peer did not handshake yet
 	{
-
 		uint8_t _handshakeReply[68];
-		uint32_t _bytesRead = read(_thePeerNetworkConfiguration->peerSocket, _handshakeReply, 68);
+		uint8_t _readCountAttempt = _tcpswarm_readExactByteCount(_thePeerNetworkConfiguration->peerSocket,_handshakeReply,68);
 
-//		printf("Got some data!\n");
-		if (_bytesRead != 68)
+		if (_readCountAttempt == 0)
 		{
 			; //TODO handle situation where not enough bytes have been read
+			return NULL;
 		}
 		else
 		{
-//			printf("Yay got handsheic Wireshark me!\n");
+			if (_handshakeReply[0] == 19 && memcmp(_handshakeReply+1,"BitTorrent protocol",19) == 0)
+			{
+				_thePeerNetworkConfiguration->peerConnectionStatus = PEER_CONNECTED;
+			}
+			else
+			{
+				//TODO handle incorrect handshake.
+				return NULL;
+			}
 		}
 	}
-	else if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_CONNECTED) //The peer has completed the handshake, all further messages are prefixed by length
+	else if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_ERROR)
 	{
-//		uint8_t _incomingMessageLength[4];
-		//TODO receive 4 byte length prefix, message ID and so on
+		//TODO handle the error accordingly
+		return NULL;
+	}
+	//=== PROCESSING ACTUAL MESSAGE ===
+	/*
+	 * After the connection has been deemed to be established,
+	 */
+	if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_CONNECTED) //The peer has completed the handshake, all further messages are prefixed by length
+	{
+		//==== READING MESSAGE LENGTH ====
+		uint8_t _incomingMessageLengthBuffer[4];
+		uint8_t _incomingMessageLengthReadAttempt = _tcpswarm_readExactByteCount(_thePeerNetworkConfiguration->peerSocket,_incomingMessageLengthBuffer,4);
+		if (_incomingMessageLengthReadAttempt == 0)
+		{
+			//TODO handle failed to read message length
+		}
+
+		//==== BUILDING MESSAGES ====
+		tcpswarm_packet_t* _receivedPacket = malloc(sizeof(tcpswarm_packet_t));
+		int32_t _incomingMessageLength = be32toh(*((int32_t*)_incomingMessageLengthBuffer));
+
+		if (_incomingMessageLength == 0) //The only case when this is true, is if this a keep-alive packet.
+		{
+			_receivedPacket -> packetSize = 0;
+			_receivedPacket -> packetData = NULL;
+		}
+		else //Everything else is normal
+		{
+			_receivedPacket -> packetSize = _incomingMessageLength;
+			_receivedPacket -> packetData = malloc(_incomingMessageLength);
+
+			uint8_t _payloadReadAttempt = _tcpswarm_readExactByteCount(_thePeerNetworkConfiguration->peerSocket, _receivedPacket -> packetData, _incomingMessageLength);
+
+			if (_payloadReadAttempt == 0)
+			{
+				//TODO handle failed read attempt of payload
+				free(_receivedPacket -> packetData);
+				free(_receivedPacket);
+				return NULL;
+			}
+		}
+
+		return _receivedPacket;
+	}
+	else
+	{
+		//TODO handle unknown peer status
+		return NULL;
 	}
 
-	return NULL;
 }
 

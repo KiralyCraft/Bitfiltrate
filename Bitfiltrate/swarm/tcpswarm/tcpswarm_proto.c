@@ -13,9 +13,65 @@
 #include <string.h>
 #include <stdlib.h>
 
-void* _tcpswarm_processingFunction(void* __rawGenericPacket)
+/*
+ * This function is always called ASYNCHRONOUSLY, independent of everything else.
+ */
+void* _tcpswarm_processingFunction(void* __dataBundle)
 {
+	//=== SPLITTING THE DATA BUNDLE ===
+	void** _splitDataBundle = __dataBundle;
 
+	void* _rawGenericPacket = _splitDataBundle[0];
+	void* _executionContext = _splitDataBundle[1];
+	void* _optionalArguments = _splitDataBundle[2];
+
+	free(__dataBundle);
+
+	//=== PROCESSING THE DATA BUNDLE ===
+	if (_rawGenericPacket == NULL)
+	{
+		//TODO handle connection death here, we should really kill it.
+//		printf("Received NULL when processing\n");
+	}
+	else
+	{
+		tcpswarm_packet_t* _packagedPacket = _rawGenericPacket;
+		tcppeer_t* _thePeer = _executionContext;
+		//=== PROCESSING THE PACKET ===
+		uint8_t _packetTypeID = _packagedPacket->packetData[0];
+
+		printf("Got packet of type %d\n",_packetTypeID);
+		if (_packetTypeID == 0)
+		{
+			_thePeer->peerChoking = 1;
+		}
+		else if (_packetTypeID == 1)
+		{
+			_thePeer->peerChoking = 0;
+		}
+		else if (_packetTypeID == 2)
+		{
+			_thePeer->peerInterested = 1;
+		}
+		else if (_packetTypeID == 3)
+		{
+			_thePeer->peerInterested = 0;
+		}
+		else if (_packetTypeID == 4)
+		{
+			//TODO add info to bitfield
+		}
+		else if (_packetTypeID == 5)
+		{
+			size_t _receivedBitfieldSize = (_packagedPacket->packetSize - 1)/(sizeof(uint8_t));
+			printf("Bitfield size: %d\n",_receivedBitfieldSize);
+		}
+
+//		receive bitfields from peers, and keep track of them. then, it may be up to the watchdog (possibly notify it) that
+//				an update has been received. then, attempt to request data with various piece sizes, see what sticks.
+//		beware that some clients may not send the whole bitfield, but rather send a few and then continue with "have" pieces
+
+	}
 }
 
 /*

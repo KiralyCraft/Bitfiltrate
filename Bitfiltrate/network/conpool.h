@@ -46,6 +46,8 @@ typedef struct
 	 * The processing function to be called after the connection pool has successfully read data from the socket. It must accept arbitrary data and may return data.
 	 *
 	 * The returned data, however, is not used for now, but rather the signature is required for the processing thread to accept.
+	 *
+	 * //TODO make this function accept three parameters, instead of having them bundled in a void
 	 */
 	void* (*processingFunction)(void*);
 

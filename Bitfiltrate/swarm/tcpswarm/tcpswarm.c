@@ -50,7 +50,9 @@ void* _tcpswarm_peerIngestFunction(peer_networkconfig_h* __thePeerConnectionDeta
 		return NULL;
 	}
 
-	void* _thePeerCommunicationQueue = conpool_createConnection(__theConnectionPool,_theTCPPeer,__theSwarmDefinition->outgoingFunction,__theSwarmDefinition->incomingFunction,__theSwarmDefinition->processingFunction,NULL,__theSwarmDefinition->postProcessingFunction);
+	//TODO we're passing the tcp peer twice here, is this really the right approach? once as a socket descriptor, once as the execution context for processing
+	//minute contemplation, i think it is. this is how we've designed the connection pool
+	void* _thePeerCommunicationQueue = conpool_createConnection(__theConnectionPool,_theTCPPeer,__theSwarmDefinition->outgoingFunction,__theSwarmDefinition->incomingFunction,__theSwarmDefinition->processingFunction,_theTCPPeer,__theSwarmDefinition->postProcessingFunction);
 	if (_thePeerCommunicationQueue == NULL)
 	{
 		//TODO failed, proper cleanup

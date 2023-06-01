@@ -29,6 +29,11 @@ typedef struct
 	uint32_t peerIP;
 	uint16_t peerPort;
 
+	/*
+	 * This connection status should only be updated by functions handling effective
+	 * communication and handshake processes. Except for initialization, no other function
+	 * should ever change this field, but any may read it.
+	 */
 	peer_networkconfig_status_h peerConnectionStatus;
 } peer_networkconfig_h;
 
