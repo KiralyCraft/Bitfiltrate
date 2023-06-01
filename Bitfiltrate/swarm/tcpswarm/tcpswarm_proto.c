@@ -8,6 +8,7 @@
 #include "tcpswarm_proto.h"
 #include "tcpswarm_comm.h"
 #include "concurrent_queue.h"
+#include "dlinkedlist.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -43,7 +44,7 @@ void* _tcpswarm_processingFunction(void* __dataBundle)
 		printf("Got packet of type %d\n",_packetTypeID);
 		if (_packetTypeID == 0)
 		{
-			_thePeer->peerChoking = 1;
+			_thePeer->peerChoking = 1; //TODO change these things to functions inside the peer definition, and call functions to set them
 		}
 		else if (_packetTypeID == 1)
 		{
@@ -64,7 +65,17 @@ void* _tcpswarm_processingFunction(void* __dataBundle)
 		else if (_packetTypeID == 5)
 		{
 			size_t _receivedBitfieldSize = (_packagedPacket->packetSize - 1)/(sizeof(uint8_t));
-			printf("Bitfield size: %d\n",_receivedBitfieldSize);
+			uint8_t* _bitfieldDataOffset = _packagedPacket->packetData + 1;
+
+			for (size_t _bitfieldByteIterator = 0; _bitfieldByteIterator < _receivedBitfieldSize; _bitfieldByteIterator++)
+			{
+				uint8_t _insertionResult = tcppeer_setBitfieldByte(_thePeer,_bitfieldByteIterator,_bitfieldDataOffset[_bitfieldByteIterator]);
+				if (_insertionResult == 0)
+				{
+					printf("Failed to add bitfield\n");
+					; //TODO handle error inserting byte of bitfield
+				}
+			}
 		}
 
 //		receive bitfields from peers, and keep track of them. then, it may be up to the watchdog (possibly notify it) that

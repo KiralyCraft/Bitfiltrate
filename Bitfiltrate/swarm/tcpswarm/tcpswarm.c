@@ -11,6 +11,7 @@
 #include "tcpswarm_proto.h"
 #include <stdlib.h>
 #include "../../network/conpool.h"
+#include <pthread.h>
 
 swarm_definition_t* tcpswarm_createDefinition(void (*__thePostProcessingFunction)(void*))
 {
@@ -29,8 +30,6 @@ swarm_definition_t* tcpswarm_createDefinition(void (*__thePostProcessingFunction
 	return _theSwarmDefinition;
 }
 
-
-
 void* _tcpswarm_peerIngestFunction(peer_networkconfig_h* __thePeerConnectionDetails,swarm_definition_t* __theSwarmDefinition, conpool_t* __theConnectionPool)
 {
 	//=== INITIALISE PEER-SPECIFIC FIELDS ===
@@ -39,8 +38,10 @@ void* _tcpswarm_peerIngestFunction(peer_networkconfig_h* __thePeerConnectionDeta
 	_theTCPPeer -> amChocking = 1;
 	_theTCPPeer -> amInterested = 0;
 	_theTCPPeer -> peerChoking = 1;
-	_theTCPPeer -> peerInterested = 0;
+	_theTCPPeer -> peerInterested = 0; //TODO move these things to the peer class itself, along with the initialization of other mutexes
 	_theTCPPeer -> peerNetworkConfig = __thePeerConnectionDetails;
+	_theTCPPeer -> peerBitfield = dlinkedlist_createList();
+	pthread_mutex_init(&(_theTCPPeer ->bitfieldMutex),NULL);
 
 	//=== INITIALISE COMMUNICATION INTERNALS ===
 	uint8_t _peerInitializationResult = _tcpswarm_peerInitialize(_theTCPPeer);

@@ -14,7 +14,7 @@
 #include "peer/peer_networkdetails.h"
 #include "dlinkedlist.h"
 #include <pthread.h>
-#include "swarm_message_types.h";
+#include "swarm_message_types.h"
 
 typedef struct swarm_definition_t swarm_definition_t;
 

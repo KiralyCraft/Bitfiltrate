@@ -36,12 +36,21 @@ typedef struct
 	 */
 	dlinkedlist_t* peerBitfield;
 
-	//=== INTERNAL USE ONLY ===
+	//=== INTERNAL USE ONLY, DURING COMMS ===
+	pthread_mutex_t bitfieldMutex;
 	pthread_mutex_t syncMutex;
 	pthread_cond_t syncCondvar;
 
 } tcppeer_t;
 
+/*
+ * This function sets the given byte representing a chunk of the bitfield at the given position.
+ *
+ * This function returns 0 if anything went wrong (1 otherwise), is absolutely THREAD SAFE!
+ */
+uint8_t tcppeer_setBitfieldByte(tcppeer_t* __thePeer, size_t __bitfieldByteIndex, uint8_t __bitfieldByte);
 
+uint8_t tcppeer_hasPiece(tcppeer_t* __thePeer,size_t __thePieceIndex);
+uint8_t tcppeer_setPiece(tcppeer_t* __thePeer,size_t __thePieceIndex,uint8_t __hasPiece);
 
 #endif /* SWARM_TCPPEER_H_ */
