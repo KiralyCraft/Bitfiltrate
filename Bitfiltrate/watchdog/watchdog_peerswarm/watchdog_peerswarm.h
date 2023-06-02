@@ -14,11 +14,43 @@
 #include "../../torrentinfo/torrentinfo.h"
 #include "../../swarm/swarm.h"
 #include "concurrent_queue.h"
+#include <time.h>
 
+typedef enum
+{
+	SWARM_EXEC_NORMAL,
+	SWARM_EXEC_GUESS_PIECE_SIZE,
+	SWARM_EXEC_CONFIRM_PIECE_SIZE
+} watchdog_peerswarm_execution_mode_e;
+
+//typedef enum
+//{
+//	time_t
+//} watchdog_peerswarm_guessdata_t;
 typedef struct
 {
-	swarm_t* thePeerSwarm;
+	//==== API VARIABLES ===
+	/*
+	 * This is the peer ingestion queue
+	 */
 	conc_queue* peerIngestionQueue;
+
+	//==== INTERNAL USE ===
+	/*
+	 * This is the current generic swarm that this watchdog operates on.
+	 */
+	swarm_t* thePeerSwarm;
+
+	/*
+	 * This is the current swarm execution mode.
+	 * Depending on this mode,
+	 */
+	watchdog_peerswarm_execution_mode_e swamExecutionMode;
+
+	/*
+	 * This is the piece size that this swarm uses.
+	 */
+	uint8_t swarmPieceSize;
 } watchdog_peerswarm_t;
 
 watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool);

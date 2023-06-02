@@ -9,9 +9,16 @@
 #include "tcpswarm.h"
 #include "tcpswarm_comm.h"
 #include "tcpswarm_proto.h"
-#include <stdlib.h>
+#include "tcpswarm_filters.h"
+
 #include "../../network/conpool.h"
+
+#include "../swarm_filters.h"
+
+#include <stdlib.h>
 #include <pthread.h>
+
+swarm_filters_peerdata_t* _tcpswarm_peerFilterFunction(dlinkedlist_t* __thePeerList, swarm_filters_peerdata_criteria_t* __theFilterCriteria);
 
 swarm_definition_t* tcpswarm_createDefinition(void (*__thePostProcessingFunction)(void*))
 {
@@ -27,6 +34,8 @@ swarm_definition_t* tcpswarm_createDefinition(void (*__thePostProcessingFunction
 	_theSwarmDefinition->generateMessageType = _tcpswarm_generatePacket;
 	_theSwarmDefinition->peerQueueOutgoingPacket = _tcpswarm_peerQueueOutgoingPacket;
 
+	_theSwarmDefinition->filterPeers = _tcpswarm_peerFilterFunction;
+
 	return _theSwarmDefinition;
 }
 
@@ -41,6 +50,7 @@ void* _tcpswarm_peerIngestFunction(peer_networkconfig_h* __thePeerConnectionDeta
 	_theTCPPeer -> peerInterested = 0; //TODO move these things to the peer class itself, along with the initialization of other mutexes
 	_theTCPPeer -> peerNetworkConfig = __thePeerConnectionDetails;
 	_theTCPPeer -> peerBitfield = dlinkedlist_createList();
+	_theTCPPeer -> packetsReceivedBitfield = 0;
 	conc_queue_init(&(_theTCPPeer -> peerIncomingPieceData));
 	pthread_mutex_init(&(_theTCPPeer ->bitfieldMutex),NULL);
 	pthread_mutex_init(&(_theTCPPeer->syncMutex),NULL);
@@ -67,5 +77,60 @@ void* _tcpswarm_peerIngestFunction(peer_networkconfig_h* __thePeerConnectionDeta
 	return _theTCPPeer;
 }
 
+/*
+ * This function assumes it has exclusive access to the peer data, such that list is not modified during iteraiton.
+ *
+ * Whoever handles our results should also make sure to clean them.
+ */
+swarm_filters_peerdata_t* _tcpswarm_peerFilterFunction(dlinkedlist_t* __thePeerList, swarm_filters_peerdata_criteria_t* __theFilterCriteria)
+{
+	swarm_filters_peerdata_t* _theFilteredPeers = swarm_filters_createPeerFilterBucket();
+
+	if (__theFilterCriteria->peerFilterCriteria == SWARM_PEERFILTER_NETWORKSTATUS)
+	{
+		uint8_t _filterResult = tcpswarm_filters_filterByNetworkStatus(__thePeerList,_theFilteredPeers,__theFilterCriteria->peerFilterData);
+		if (_filterResult == 0)
+		{
+			swarm_filters_destroyPeerFilterBucket(_theFilteredPeers);
+			return NULL;
+		}
+	}
+	else if (__theFilterCriteria->peerFilterCriteria == SWARM_PEERFILTER_PACKETTIME_INCOMING)
+	{
+		uint8_t _filterResult = tcpswarm_filters_filterByIncomingPacketTime(__thePeerList,_theFilteredPeers,__theFilterCriteria->peerFilterData);
+		if (_filterResult == 0)
+		{
+			swarm_filters_destroyPeerFilterBucket(_theFilteredPeers);
+			return NULL;
+		}
+	}
+	else if (__theFilterCriteria->peerFilterCriteria == SWARM_PEERFILTER_PACKETTIME_OUTGOING)
+	{
+		uint8_t _filterResult = tcpswarm_filters_filterByOutgoingPacketTime(__thePeerList,_theFilteredPeers,__theFilterCriteria->peerFilterData);
+		if (_filterResult == 0)
+		{
+			swarm_filters_destroyPeerFilterBucket(_theFilteredPeers);
+			return NULL;
+		}
+	}
+	else if (__theFilterCriteria->peerFilterCriteria == SWARM_PEERFILTER_PACKETCOUNT_INCOMING_NONZERO)
+	{
+		uint8_t _filterResult = tcpswarm_filters_filterByNonzeroIncomingPacketCount(__thePeerList,_theFilteredPeers,__theFilterCriteria->peerFilterData);
+		if (_filterResult == 0)
+		{
+			swarm_filters_destroyPeerFilterBucket(_theFilteredPeers);
+			return NULL;
+		}
+	}
+	else //Consider unimplemented criteria
+	{
+		swarm_filters_destroyPeerFilterBucket(_theFilteredPeers);
+		return NULL;
+	}
+	return _theFilteredPeers;
+
+//	ai ramas aici, unde daca venea un pachet de un anumit id, setai bitul ala din packetsreceivebitfield.
+//		tot asa, trebuie sa dai nitialize la byte-ul ala cu 0 cand creezi tcppeer-ul
+}
 
 

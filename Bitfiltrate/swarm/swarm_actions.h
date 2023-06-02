@@ -18,13 +18,37 @@
 uint8_t swarm_connectPeer(swarm_t* __theSwarm,void* __genericPeerRepresentation);
 
 /*
- * DO NOT USE
- * This method is invoked upon the swarm and has the purpose of triggering all clients to connect and handshake.
- * Given that in a swarm, clients are initially added unconnected, this task triggers a handshake for all of them that are not connected (nor initialized)
+ * Given a swarm and a specific peer, it attempts to unchoke the given peer.
+ * After this step, the peer may give us data if we ask for it.
  *
- * If this function fails, it returns the number of peers who could not have their connect request submitted to.
+ * This method returns 0 if anything went wrong, or 1 otherwise.
  */
-size_t swarm_connectAll(swarm_t* __theSwarm);
+uint8_t swarm_unchokePeer(swarm_t* __theSwarm,void* __genericPeerRepresentation);
+
+/*
+ * Given a swarm and a specific peer, it attempts to inform the given peer that we are interested.
+ *
+ * This method returns 0 if anything went wrong, or 1 otherwise.
+ */
+uint8_t swarm_informInterestedPeer(swarm_t* __theSwarm,void* __genericPeerRepresentation);
+
+/*
+ * Given a swarm and a specific peer, along with data such as the piece we're interested in, the offset within it and the length of data,
+ * we may expect piece messages from this peer.
+ *
+ * This method returns 0 if anything went wrong, or 1 otherwise.
+ */
+uint8_t swarm_requestPiece(swarm_t* __theSwarm,void* __genericPeerRepresentation, size_t __thePieceIndex, size_t __thePieceOffset, size_t __theIntendedLength);
+
+
+///*
+// * DO NOT USE
+// * This method is invoked upon the swarm and has the purpose of triggering all clients to connect and handshake.
+// * Given that in a swarm, clients are initially added unconnected, this task triggers a handshake for all of them that are not connected (nor initialized)
+// *
+// * If this function fails, it returns the number of peers who could not have their connect request submitted to.
+// */
+//size_t swarm_connectAll(swarm_t* __theSwarm);
 /*
  * I can't remember what this is supposed to do.
  */

@@ -8,13 +8,15 @@
 #ifndef SWARM_POOL_SWARM_H_
 #define SWARM_POOL_SWARM_H_
 
-#include <stdint.h>
 #include "../network/conpool.h"
 #include "../torrentinfo/torrentinfo.h"
 #include "peer/peer_networkdetails.h"
 #include "dlinkedlist.h"
-#include <pthread.h>
 #include "swarm_message_types.h"
+#include "swarm_filters.h"
+
+#include <pthread.h>
+#include <stdint.h>
 
 typedef struct swarm_definition_t swarm_definition_t;
 
@@ -48,6 +50,10 @@ struct swarm_definition_t
 	 */
 	void* (*generateMessageType)(swarm_message_e,void*);
 
+	/*
+	 * This function is used to filter the peers from the given swarm data according to the specified criteria.
+	 */
+	swarm_filters_peerdata_t* (*filterPeers)(dlinkedlist_t*,swarm_filters_peerdata_criteria_t*);
 	//==== INTERNAL USE ====
 	void (*outgoingFunction)(void*,void*,void*);
 	void* (*incomingFunction)(void*,void*);
@@ -98,5 +104,16 @@ uint8_t swarm_ingestPeer(swarm_t* __theSwarm, peer_networkconfig_h* __peerDetail
  * processed (by another entity, such as the specific swarm implementation) into a more universal language.
  */
 void swarm_postProcessPeerData(void* __thePeerData);
+
+/*
+ * This method filters peers from the swarm based on their connectivity criteria. It also takes an optional argument,
+ * which is up to the implementation to use.
+ * If anything went wrong filtering the peers,this function returns NULL.
+ *
+ * In the event that no peer fits the filtering criteria, this method still retuns an object with the peerCount set to zero.
+ *
+ * Methods that call this function should clear the received package bundle.
+ */
+swarm_filters_peerdata_t* swarm_filterPeer(swarm_t* __theSwarm,swarm_filters_peerdata_criteria_t* __peerFilterCriteria);
 
 #endif /* SWARM_POOL_SWARM_H_ */

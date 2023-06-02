@@ -62,6 +62,14 @@ uint8_t swarm_ingestPeer(swarm_t* __theSwarm, peer_networkconfig_h* __peerDetail
 			printf("Aw no couldn't connect peer when ingesting :(\n");
 			return 0;
 		}
+
+		uint8_t _peerUnchokeResult = swarm_informInterestedPeer(__theSwarm,_theImplementationSpecificPeerRepresentation);
+		if (_peerUnchokeResult == 0)
+		{
+			pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
+			printf("Aw no couldn't inform interested peer when ingesting :(\n");
+			return 0;
+		}
 	}
 	pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
 	printf("Peer ingested!\n");
@@ -72,3 +80,20 @@ void swarm_postProcessPeerData(void* __thePeerData)
 {
 	//TODO
 }
+
+/*
+ * Filters peers of a swarm, in a locking way, based on the given criteria.
+ * The peers returned in this bucket are safe to be iterated asynchronously, as they are just
+ * the references to the peers contained within the pool, in an abstract way, depending on the implementation.
+ */
+swarm_filters_peerdata_t* swarm_filterPeer(swarm_t* __theSwarm,swarm_filters_peerdata_criteria_t* __peerFilterCriteria)
+{
+	pthread_mutex_lock(&__theSwarm->peerManipulationMutex);
+	swarm_definition_t* _theSwarmDefinition = __theSwarm->currentSwarmDefinition;
+	swarm_filters_peerdata_t* _filteredData = _theSwarmDefinition->filterPeers(__theSwarm->currentPeerData,__peerFilterCriteria);
+	pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
+
+	return _filteredData;
+}
+
+

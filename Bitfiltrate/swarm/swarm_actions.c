@@ -22,11 +22,33 @@ uint8_t swarm_connectPeer(swarm_t* __theSwarm,void* __genericPeerRepresentation)
 	return _queueResult;
 }
 
-size_t swarm_connectAll(swarm_t* __theSwarm)
+uint8_t swarm_unchokePeer(swarm_t* __theSwarm,void* __genericPeerRepresentation)
 {
 	swarm_definition_t* _currentSwarmDefinition = __theSwarm ->currentSwarmDefinition;
-	void* _theHandshakeMessage = _currentSwarmDefinition->generateMessageType(SWARM_MESSAGE_HANDSHAKE, __theSwarm->torrentHash);
-	return swarm_broadcast(__theSwarm,_theHandshakeMessage);
+	void* _theUnchokeMessage = _currentSwarmDefinition->generateMessageType(SWARM_MESSAGE_UNCHOKE, NULL);
+	uint8_t _queueResult = _currentSwarmDefinition->peerQueueOutgoingPacket(_theUnchokeMessage,__genericPeerRepresentation);
+	return _queueResult;
+}
+
+uint8_t swarm_informInterestedPeer(swarm_t* __theSwarm,void* __genericPeerRepresentation)
+{
+	swarm_definition_t* _currentSwarmDefinition = __theSwarm ->currentSwarmDefinition;
+	void* _theUnchokeMessage = _currentSwarmDefinition->generateMessageType(SWARM_MESSAGE_INTERESTED, NULL);
+	uint8_t _queueResult = _currentSwarmDefinition->peerQueueOutgoingPacket(_theUnchokeMessage,__genericPeerRepresentation);
+	return _queueResult;
+}
+
+uint8_t swarm_requestPiece(swarm_t* __theSwarm,void* __genericPeerRepresentation, size_t __thePieceIndex, size_t __thePieceOffset, size_t __theIntendedLength)
+{
+	size_t _informationBundle[3];
+	_informationBundle[0] = __thePieceIndex;
+	_informationBundle[1] = __thePieceOffset;
+	_informationBundle[2] = __theIntendedLength;
+
+	swarm_definition_t* _currentSwarmDefinition = __theSwarm ->currentSwarmDefinition;
+	void* _theUnchokeMessage = _currentSwarmDefinition->generateMessageType(SWARM_MESSAGE_REQUEST, _informationBundle);
+	uint8_t _queueResult = _currentSwarmDefinition->peerQueueOutgoingPacket(_theUnchokeMessage,__genericPeerRepresentation);
+	return _queueResult;
 }
 
 /*

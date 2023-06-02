@@ -42,6 +42,12 @@ typedef struct
 	 */
 	conc_queue* peerIncomingPieceData;
 
+	/*
+	 * This is a byte corresponding to the 8+1 possible messages that this peer can receive.
+	 * Processed in host order, bit #0 represents whether or not a package with ID 0 has ever been
+	 * received. With the exception of message id 9 (port).
+	 */
+	uint16_t packetsReceivedBitfield;
 	//=== INTERNAL USE ONLY===
 	pthread_mutex_t bitfieldMutex;
 	pthread_mutex_t syncMutex;

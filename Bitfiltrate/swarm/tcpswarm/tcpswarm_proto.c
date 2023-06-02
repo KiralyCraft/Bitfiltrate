@@ -27,6 +27,10 @@ void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcpp
 	uint8_t _packetTypeID = __packagedPacket->packetData[0];
 	uint8_t* _packetDataOffset =  __packagedPacket->packetData+1;
 
+	//=== MARKING PACKET AS SEEN ===
+	uint8_t _packetSeenMask = 1 << _packetTypeID;
+	__thePeer->packetsReceivedBitfield |= _packetSeenMask;
+	//=== HANDLING PACKET ===
 	printf("Got packet of type %d\n",_packetTypeID);
 	if (_packetTypeID == 0) //Choked
 	{
@@ -147,8 +151,8 @@ void* _tcpswarm_generatePacket(swarm_message_e __theMessageType, void* __optiona
 		uint8_t* _torrentHashID = __optionalData;
 
 		//=== CREATING THE OUTGOING PACKET ===
-		_createdPacket->packetData = malloc(sizeof(uint8_t)*68);
 		_createdPacket->packetSize = sizeof(uint8_t)*68;
+		_createdPacket->packetData = malloc(_createdPacket->packetSize);
 
 		//=== FILLING PACKET DATA ===
 		uint8_t* _currentPacketOffset = _createdPacket->packetData;
@@ -173,9 +177,74 @@ void* _tcpswarm_generatePacket(swarm_message_e __theMessageType, void* __optiona
 		memcpy(_currentPacketOffset,_torrentHashID,20);
 		_currentPacketOffset += 20;
 		//===> PEER_ID
-//		memcpy(_currentPacketOffset,"-AZ2060-",8);
 		memcpy(_currentPacketOffset,"-qB4450-dzjx7S4IOm!K",20);
-		//Leave this random, uninitialized :)
+	}
+	else if (__theMessageType == SWARM_MESSAGE_CHOKE)
+	{
+		_createdPacket->packetSize = sizeof(uint32_t)+sizeof(uint8_t);
+		_createdPacket->packetData = malloc(_createdPacket->packetSize);
+
+		uint8_t* _currentPacketOffset = _createdPacket->packetData;
+		//=== FILLING THE LENGTH ===
+		((uint32_t*)_currentPacketOffset)[0] = htobe32(1);
+		_currentPacketOffset += sizeof(uint32_t);
+		//=== FILLING THE ID ===
+		((uint8_t*)_currentPacketOffset)[0] = 0;
+	}
+	else if (__theMessageType == SWARM_MESSAGE_UNCHOKE)
+	{
+		_createdPacket->packetSize = sizeof(uint32_t)+sizeof(uint8_t);
+		_createdPacket->packetData = malloc(_createdPacket->packetSize);
+
+		uint8_t* _currentPacketOffset = _createdPacket->packetData;
+		//=== FILLING THE LENGTH ===
+		((uint32_t*)_currentPacketOffset)[0] = htobe32(1);
+		_currentPacketOffset += sizeof(uint32_t);
+		//=== FILLING THE ID ===
+		((uint8_t*)_currentPacketOffset)[0] = 1;
+	}
+	else if (__theMessageType == SWARM_MESSAGE_INTERESTED)
+	{
+		_createdPacket->packetSize = sizeof(uint32_t)+sizeof(uint8_t);
+		_createdPacket->packetData = malloc(_createdPacket->packetSize);
+
+		uint8_t* _currentPacketOffset = _createdPacket->packetData;
+		//=== FILLING THE LENGTH ===
+		((uint32_t*)_currentPacketOffset)[0] = htobe32(1);
+		_currentPacketOffset += sizeof(uint32_t);
+		//=== FILLING THE ID ===
+		((uint8_t*)_currentPacketOffset)[0] = 2;
+	}
+	else if (__theMessageType == SWARM_MESSAGE_NOT_INTERESTED)
+	{
+		_createdPacket->packetSize = sizeof(uint32_t)+sizeof(uint8_t);
+		_createdPacket->packetData = malloc(_createdPacket->packetSize);
+
+		uint8_t* _currentPacketOffset = _createdPacket->packetData;
+		//=== FILLING THE LENGTH ===
+		((uint32_t*)_currentPacketOffset)[0] = htobe32(1);
+		_currentPacketOffset += sizeof(uint32_t);
+		//=== FILLING THE ID ===
+		((uint8_t*)_currentPacketOffset)[0] = 3;
+	}
+	else if (__theMessageType == SWARM_MESSAGE_REQUEST)
+	{
+		size_t* _informationBundle = __optionalData;
+		_createdPacket->packetSize = sizeof(uint32_t)+sizeof(uint8_t)+sizeof(uint32_t)*3;
+		_createdPacket->packetData = malloc(_createdPacket->packetSize);
+
+		uint8_t* _currentPacketOffset = _createdPacket->packetData;
+		//=== FILLING THE LENGTH ===
+		((uint32_t*)_currentPacketOffset)[0] = htobe32(13);
+		_currentPacketOffset += sizeof(uint32_t);
+		//=== FILLING THE ID ===
+		((uint8_t*)_currentPacketOffset)[0] = 6;
+		_currentPacketOffset += sizeof(uint8_t);
+		//=== FILLING THE DATA ===
+		((uint32_t*)_currentPacketOffset)[0] = htobe32(_informationBundle[0]);
+		((uint32_t*)_currentPacketOffset)[1] = htobe32(_informationBundle[1]);
+		((uint32_t*)_currentPacketOffset)[2] = htobe32(_informationBundle[2]);
+
 	}
 	return _createdPacket;
 }
