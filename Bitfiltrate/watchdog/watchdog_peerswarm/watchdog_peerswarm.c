@@ -25,7 +25,7 @@ watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_
 	watchdog_peerswarm_t* _newPeerSwarmWatchdog = malloc(sizeof(watchdog_peerswarm_t));
 	_newPeerSwarmWatchdog -> thePeerSwarm = _peerSwarm;
 	_newPeerSwarmWatchdog -> swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
-//	_newPeerSwarmWatchdog -> swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
+	_newPeerSwarmWatchdog -> swarmPieceSize = 30;
 	conc_queue_init(&_newPeerSwarmWatchdog -> peerIngestionQueue);
 
 	//=== SUBMITTING THE WATCHDOG ===
