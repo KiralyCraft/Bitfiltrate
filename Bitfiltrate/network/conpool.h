@@ -12,6 +12,11 @@
 #include "dlinkedlist.h"
 #include "concurrent_queue.h"
 
+typedef enum
+{
+	CONPOOL_CONNECTION_STATUS_ALIVE,
+	CONPOOL_CONNECTION_STATUS_DEAD,
+} conpool_connection_status_e;
 typedef struct
 {
 	/*
@@ -50,6 +55,11 @@ typedef struct
 	 * //TODO make this function accept three parameters, instead of having them bundled in a void
 	 */
 	void* (*processingFunction)(void*);
+
+	/*
+	 * This variable represents the status of the connection, be it dead or alive, or another yet undocumented status.
+	 */
+	conpool_connection_status_e connectionHealth;
 
 } conpool_connection_details_t;
 

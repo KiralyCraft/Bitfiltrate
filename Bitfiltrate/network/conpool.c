@@ -50,6 +50,8 @@ conc_queue* conpool_createConnection(conpool_t* __theConnectionPool, void* __soc
 	_theNewConnection -> incomingFunction = __incomingFunction;
 	_theNewConnection -> processingFunction = __processingFunction;
 
+	_theNewConnection -> connectionHealth = CONPOOL_CONNECTION_STATUS_ALIVE;
+
 	conc_queue_init(&_theNewConnection -> outgoingPacketQueue);
 
 	uint8_t _submissionResult = _conpool_submitConnection(__theConnectionPool, _theNewConnection);

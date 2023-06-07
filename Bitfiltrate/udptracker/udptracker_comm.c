@@ -9,6 +9,11 @@
 #include "udptracker_comm.h"
 #include "udptracker.h"
 
+    #include <sys/socket.h>
+       #include <netinet/in.h>
+       #include <arpa/inet.h>
+
+
 #define UDP_CHUNK_SIZE 1500
 
 
@@ -29,6 +34,7 @@ void udptracker_comm_outgoingFunction(void* __socketDescriptor, void* __outgoing
 
 	ssize_t _bytesSent = sendto(_trackerNetworkConfiguration->trackerSocket, _thePacket->packetData, _thePacket->packetSize , 0 , (const struct sockaddr *) &_theTargetServer, sizeof(_theTargetServer));
 
+	printf("%s\n",inet_ntoa(_theTargetServer.sin_addr));
 	if (_bytesSent != _thePacket->packetSize)
 	{
 		//TODO error

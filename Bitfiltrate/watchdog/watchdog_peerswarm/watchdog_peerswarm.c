@@ -7,9 +7,11 @@
 
 #include "../../swarm/tcpswarm/tcpswarm.h"
 #include "../../swarm/swarm.h"
+#include "../../swarm/swarm_actions.h"
 #include "watchdog_peerswarm.h"
 #include "../../torrentinfo/torrentinfo.h"
 #include <stdlib.h>
+
 
 #include "dlinkedlist.h"
 
@@ -72,29 +74,63 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 			printf("Failed when filtering connected peers\n");
 			return;
 		}
-		size_t _connectedPeers = dlinkedlist_getCount(_filteredConnectedPeers->peerData);
+		size_t _connectedPeerCount = dlinkedlist_getCount(_filteredConnectedPeers->peerData);
+
+		if (_connectedPeerCount > 0)
+		{
+			//=== COMPUTING OFFSET ===
+			uint32_t _guessedPieceSize = (1 << _watchdogData->swarmPieceSize);
+			//=== SENDING OUT REQUESTS FOR THE CURRENT PIECE SIZE ===
+			for (size_t _connectedPeerIterator = 0; _connectedPeerIterator < _connectedPeerCount; _connectedPeerIterator++)
+			{
+				void* _theConnectedIteratedPeer = dlinkedlist_getPosition(_connectedPeerIterator,_filteredConnectedPeers->peerData);
+				//Request one byte before the theoretical end of the piece. If it's received, means the piece size is valid.
+				uint8_t _resultInformInterested = swarm_informInterestedPeer(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer);
+				if (_resultInformInterested == 0)
+				{
+					printf("Failed to inform interested peer\n");
+					//TODO Handle request errors
+				}
+				uint8_t _requestResult = swarm_requestPiece(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,0,_guessedPieceSize-1,1); //TODO is this really the right place to request packets from? does it need to be thread safe?
+				if (_requestResult == 0)
+				{
+					printf("Failed to request peicefrom peer\n");
+					//TODO Handle request errors
+				}
+			}
+			_watchdogData->timeGuessedPiece = time(NULL);
+			//=== SWITCH THE OPERATION IN CONFIRM MODE ===
+			_watchdogData->swamExecutionMode = SWARM_EXEC_CONFIRM_PIECE_SIZE;
+			printf("Told peers about pieces!\n");
+
+		}
 		swarm_filters_destroyPeerFilterBucket(_filteredConnectedPeers);
-
-		//=== SENDING OUT REQUESTS FOR THE CURRENT PIECE SIZE ===
-
-		//TODO send requests and mark the time when you sent them
-
-		//=== SWITCH THE OPERATION IN CONFIRM MODE ===
-
-		//TODO switch execution mode
-
 	}
 	else if (_theSwarmExecutionMode == SWARM_EXEC_CONFIRM_PIECE_SIZE)
 	{
-		//TODO wait until 15 seconds have passed since the last request, then check the bitfields. if any received, set piece size and change to normal mode.
-	//		swarm_message_e _desiredPacket = SWARM_MESSAGE_BITFIELD-2; //Have to do it like this, or use the actual packet ID
-	//		swarm_filters_peerdata_criteria_t _peerFilter;
-	//		_peerFilter.peerFilterCriteria = SWARM_PEERFILTER_PACKETCOUNT_INCOMING_NONZERO;
-	//		_peerFilter.peerFilterData = &_desiredPacket;
-	//
-	//		swarm_filters_peerdata_t* _filteredPeers = swarm_filterPeer(_watchdogData->thePeerSwarm,&_peerFilter);
-	//		printf("%d\n",dlinkedlist_getCount(_filteredPeers->peerData));
-	//		swarm_filters_destroyPeerFilterBucket(_filteredPeers);
+		if (difftime(time(NULL),_watchdogData->timeGuessedPiece) >= 15)
+		{
+			swarm_message_e _desiredPacket = SWARM_MESSAGE_PIECE-2; //Have to do it like this, or use the actual packet ID
+			swarm_filters_peerdata_criteria_t _peerFilter;
+			_peerFilter.peerFilterCriteria = SWARM_PEERFILTER_PACKETCOUNT_INCOMING_NONZERO;
+			_peerFilter.peerFilterData = &_desiredPacket;
+
+			swarm_filters_peerdata_t* _filteredPeers = swarm_filterPeer(_watchdogData->thePeerSwarm,&_peerFilter);
+			size_t _peerReceivedDataCount = dlinkedlist_getCount(_filteredPeers->peerData);
+			printf("DEBUG WATCHDOG CONFIRM PIECE: Received data count %d\n",_peerReceivedDataCount);
+			swarm_filters_destroyPeerFilterBucket(_filteredPeers);
+
+			if (_peerReceivedDataCount == 0)
+			{
+				_watchdogData->swarmPieceSize--;
+				printf("DEBUG: The piece size isn't %d, decreasing\n",_watchdogData->swarmPieceSize);
+				_watchdogData->swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
+			}
+			else
+			{
+				printf("log2 Piece size confirmed! %d\n",_watchdogData->swarmPieceSize);
+			}
+		}
 	}
 }
 

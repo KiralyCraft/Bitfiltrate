@@ -18,6 +18,11 @@ void* conpool_executorSendingFunction(void* __providedData)
 	//TODO implement error checking for the outgoing function. If anything happens, kill both this and the incoming function
 	while(1)
 	{
+		if (_connectionDetails->connectionHealth == CONPOOL_CONNECTION_STATUS_DEAD)
+		{
+			break;
+		}
+
 		void* _poppedData = conc_queue_pop(_connectionDetails->outgoingPacketQueue); //This should be a blocking operation
 		_connectionDetails->outgoingFunction(_connectionDetails->socketDescription,_poppedData,_connectionDetails->optionalArgument);
 	}
@@ -34,6 +39,12 @@ void* conpool_executorReceivingFunction(void* __providedData)
 	{
 		//==== RECEIVE DATA FROM THE CONNECTION ====
 		void* _receivedData = _connectionDetails->incomingFunction(_connectionDetails->socketDescription,_connectionDetails->optionalArgument);
+		if (_receivedData == NULL)
+		{
+			printf("Connection died\n");
+			_connectionDetails->connectionHealth = CONPOOL_CONNECTION_STATUS_DEAD;
+			break;
+		}
 		//==== PREPARE PASSING OF DATA BUNDLES ====
 		void** _dataBundle = malloc(sizeof(void*)*2);
 		_dataBundle[0] = _receivedData;

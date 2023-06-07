@@ -48,9 +48,13 @@ typedef struct
 	watchdog_peerswarm_execution_mode_e swamExecutionMode;
 
 	/*
-	 * This is the piece size that this swarm uses.
+	 * This is the piece size that this swarm uses, expressed as a logarithm of two.
 	 */
 	uint8_t swarmPieceSize;
+
+	//=== PROTOCOL HACKS ===
+	time_t timeGuessedPiece;
+
 } watchdog_peerswarm_t;
 
 watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool);
