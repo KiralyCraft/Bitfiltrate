@@ -9,11 +9,10 @@
 #include "tcpswarm_comm.h"
 #include "concurrent_queue.h"
 #include "dlinkedlist.h"
-#include "tcpswarm_packet_wrappers.h"
-
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include "../swarm_block.h"
 
 /*
  * This is a helper function that gets called by the processing function. It's purpose is to serve
@@ -86,15 +85,22 @@ void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcpp
 	}
 	else if (_packetTypeID == 7) //Piece - Actual incoming data
 	{
-		tcpswarm_proto_packet_piece* _theConstructedPiece = malloc(sizeof(tcpswarm_proto_packet_piece));
-		_theConstructedPiece->thePieceIndex = be32toh(((uint32_t*)_packetDataOffset)[0]);
-		_theConstructedPiece->theOffsetWithinPiece = be32toh(((uint32_t*)_packetDataOffset)[1]);
-		_theConstructedPiece->theDataLength = __packagedPacket->packetSize - sizeof(uint32_t)*2 - 1;
+//		swarm_block_t* _theConstructedPiece = malloc(sizeof(swarm_block_t));
+//		_theConstructedPiece->thePieceIndex = be32toh(((uint32_t*)_packetDataOffset)[0]);
+//		_theConstructedPiece->theOffsetWithinPiece = be32toh(((uint32_t*)_packetDataOffset)[1]);
+//		_theConstructedPiece->theDataLength = __packagedPacket->packetSize - sizeof(uint32_t)*2 - 1;
+//
+//		_theConstructedPiece->theData = malloc(_theConstructedPiece->theDataLength);
+//		memcpy(_theConstructedPiece->theData, _packetDataOffset + sizeof(uint32_t)*2, _theConstructedPiece->theDataLength);
 
-		_theConstructedPiece->theData = malloc(_theConstructedPiece->theDataLength);
-		memcpy(_theConstructedPiece->theData, _packetDataOffset + sizeof(uint32_t)*2, _theConstructedPiece->theDataLength);
+		size_t _thePieceIndex = be32toh(((uint32_t*)_packetDataOffset)[0]);
+		size_t _theOffsetWithinPiece = be32toh(((uint32_t*)_packetDataOffset)[1]);
+		size_t _theDataLength = __packagedPacket->packetSize - sizeof(uint32_t)*2 - 1;
+		uint8_t* _blockDataOffset = _packetDataOffset + sizeof(uint32_t)*2;
 
-		conc_queue_push(__thePeer->peerIncomingPieceData,_theConstructedPiece);
+		swarm_block_t* _theConstructedPiece = swarm_block_constructBlockWrapper(_thePieceIndex,_theOffsetWithinPiece,_theDataLength,_blockDataOffset);
+
+		conc_queue_push(__thePeer->peerIncomingBlockData,_theConstructedPiece);
 	}
 	else if (_packetTypeID == 8) //Cancel - Not implemnted
 	{

@@ -164,12 +164,10 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 		for (size_t _connectedPeerIterator = 0; _connectedPeerIterator < _connectedPeerCount; _connectedPeerIterator++)
 		{
 			void* _theConnectedIteratedPeer = dlinkedlist_getPosition(_connectedPeerIterator,_filteredConnectedPeers->peerData);
-			void* _queriedData = swarm_query_peer(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,SWARM_QUERY_PIECE_COUNT,NULL);
+			size_t* _queriedData = swarm_query_peer(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,SWARM_QUERY_PIECE_COUNT,NULL);
 		}
 		//=== CLEANUP THE FILTERS ===
 		swarm_filters_destroyPeerFilterBucket(_filteredConnectedPeers);
-
-//		faceai un swarm_drainPeerData care returna date din peer, iar cand nu mai sunt da null - e sincronizat corect si corespunzator
 //		apoi o chestie asemanatoare cu reconstruirea bitfieldului si a pieces
 	}
 }

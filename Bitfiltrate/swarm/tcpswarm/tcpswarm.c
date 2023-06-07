@@ -55,7 +55,7 @@ void* _tcpswarm_peerIngestFunction(peer_networkconfig_h* __thePeerConnectionDeta
 	_theTCPPeer -> peerNetworkConfig = __thePeerConnectionDetails;
 	_theTCPPeer -> peerBitfield = dlinkedlist_createList();
 	_theTCPPeer -> packetsReceivedBitfield = 0;
-	conc_queue_init(&(_theTCPPeer -> peerIncomingPieceData));
+	conc_queue_init(&(_theTCPPeer -> peerIncomingBlockData));
 	pthread_mutex_init(&(_theTCPPeer ->bitfieldMutex),NULL);
 	pthread_mutex_init(&(_theTCPPeer->syncMutex),NULL);
 	pthread_cond_init(&(_theTCPPeer->syncCondvar),NULL);
@@ -149,7 +149,7 @@ void* _tcpswarm_peerQueryFunction(void* __theImplementedPeer, swarm_query_type_e
 	if (__queryType == SWARM_QUERY_PIECE_COUNT) //Argument = NULL
 	{
 		size_t* _toReturn = malloc(sizeof(size_t));
-		_toReturn[0] = conc_queue_count(_thePeer->peerIncomingPieceData);
+		_toReturn[0] = conc_queue_count(_thePeer->peerIncomingBlockData);
 		return _toReturn;
 	}
 	else if (__queryType == SWARM_QUERY_HAS_PIECE) //Argument = size_t*
@@ -162,11 +162,7 @@ void* _tcpswarm_peerQueryFunction(void* __theImplementedPeer, swarm_query_type_e
 	}
 	else if (__queryType == SWARM_QUERY_DRAIN_PIECE) //Argument = NULL
 	{
-		size_t _currentPieceCount = conc_queue_count(_thePeer->peerIncomingPieceData);
-		if (_currentPieceCount > 0)
-		{
-			return conc_queue_pop(_thePeer->peerIncomingPieceData);
-		}
+		return conc_queue_popifpossible(_thePeer->peerIncomingBlockData);
 	}
 
 	return NULL;

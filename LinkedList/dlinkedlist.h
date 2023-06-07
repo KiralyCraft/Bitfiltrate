@@ -63,6 +63,13 @@ void* dlinkedlist_getPosition(size_t __theElementPosition, dlinkedlist_t* __theL
  * Returns the number of elements currently present in the list provided.
  */
 size_t dlinkedlist_getCount(dlinkedlist_t* __theList);
+
+/*
+ * Returns the number of elements from the list which match the comparison criteria, according to the given comparison function.
+ * In the comparison function, the second argument is always the comparison criteria which is provided, and the first one
+ * is the compared element from within the list.
+ */
+size_t dlinkedlist_getCustomCount(dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*),void* __comparisonCriteria);
 /*
  * Checks whether or not the given element exists in the specified list.
  * The comparison is simply a comparison of pointers.

@@ -40,7 +40,7 @@ typedef struct
 	 * This queue holds data for the this peer, that it has been sent over the network.
 	 * No order is done here, and this data should be evacuated by an utility as soon as possible.
 	 */
-	conc_queue* peerIncomingPieceData;
+	conc_queue* peerIncomingBlockData;
 
 	/*
 	 * This is a byte corresponding to the 8+1 possible messages that this peer can receive.

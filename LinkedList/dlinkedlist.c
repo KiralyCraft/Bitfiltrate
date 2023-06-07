@@ -244,6 +244,29 @@ size_t dlinkedlist_getCount(dlinkedlist_t* __theList)
 	return __theList -> elementCount;
 }
 
+size_t dlinkedlist_getCustomCount(dlinkedlist_t* __theList, uint8_t (*__comparisonFunction)(void*,void*),void* __comparisonCriteria)
+{
+	dlinkedlist_element_t* _currentElement = __theList -> startElement;
+
+	size_t _currentCount = 0;
+	while(1)
+	{
+		if (_currentElement == NULL) //If we reached the end of the list
+		{
+			break;
+		}
+		else
+		{
+			if (__comparisonFunction(_currentElement -> elementData,__comparisonCriteria)) //If the comparison function returns a positive result
+			{
+				_currentCount++;
+			}
+			_currentElement = _currentElement -> nextElement;
+		}
+	}
+	return _currentCount;
+}
+
 /*
  * Helper function to avoid duplicating code for checking if an element exists, depending on the comparison function.
  *

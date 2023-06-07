@@ -13,6 +13,7 @@
 #include "../../swarm/peer/peer_networkdetails.h"
 #include "../../torrentinfo/torrentinfo.h"
 #include "../../swarm/swarm.h"
+#include "../../piecetracker/piecetracker.h"
 #include "concurrent_queue.h"
 #include <time.h>
 
@@ -47,6 +48,13 @@ typedef struct
 	 * This is the piece size that this swarm uses, expressed as a logarithm of two.
 	 */
 	uint8_t swarmPieceSize;
+
+	/*
+	 * The piece tracker which keeps track of what pieces have been received thus far.
+	 *
+	 * This piece tracker should be received externally.
+	 */
+	piecetracker_t* thePieceTracker;
 
 	//=== PROTOCOL HACKS ===
 	time_t timeGuessedPiece;
