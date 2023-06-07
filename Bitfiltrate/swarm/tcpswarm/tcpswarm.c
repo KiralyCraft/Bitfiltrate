@@ -14,10 +14,12 @@
 #include "../../network/conpool.h"
 
 #include "../swarm_filters.h"
+#include "../swarm_query.h"
 
 #include <stdlib.h>
 #include <pthread.h>
 
+void* _tcpswarm_peerQueryFunction(void* __theImplementedPeer, swarm_query_type_e __queryType, void* __querySpecificArguments);
 swarm_filters_peerdata_t* _tcpswarm_peerFilterFunction(dlinkedlist_t* __thePeerList, swarm_filters_peerdata_criteria_t* __theFilterCriteria);
 
 swarm_definition_t* tcpswarm_createDefinition(void (*__thePostProcessingFunction)(void*))
@@ -35,6 +37,8 @@ swarm_definition_t* tcpswarm_createDefinition(void (*__thePostProcessingFunction
 	_theSwarmDefinition->peerQueueOutgoingPacket = _tcpswarm_peerQueueOutgoingPacket;
 
 	_theSwarmDefinition->filterPeers = _tcpswarm_peerFilterFunction;
+
+	_theSwarmDefinition->peerQueryFunction = _tcpswarm_peerQueryFunction;
 
 	return _theSwarmDefinition;
 }
@@ -133,4 +137,37 @@ swarm_filters_peerdata_t* _tcpswarm_peerFilterFunction(dlinkedlist_t* __thePeerL
 //		tot asa, trebuie sa dai nitialize la byte-ul ala cu 0 cand creezi tcppeer-ul
 }
 
+/*
+ * This method should process query targeted at the given peer, considering the given arguments, and return a result accordingly.
+ *
+ * This method is NOT THREAD SAFE, and the caller should make sure to at least keep the peer a valid reference. If more
+ * synchronization is required, this method should assume it is being called by multiple threads.
+ */
+void* _tcpswarm_peerQueryFunction(void* __theImplementedPeer, swarm_query_type_e __queryType, void* __querySpecificArguments)
+{
+	tcppeer_t* _thePeer = __theImplementedPeer;
+	if (__queryType == SWARM_QUERY_PIECE_COUNT) //Argument = NULL
+	{
+		size_t* _toReturn = malloc(sizeof(size_t));
+		_toReturn[0] = conc_queue_count(_thePeer->peerIncomingPieceData);
+		return _toReturn;
+	}
+	else if (__queryType == SWARM_QUERY_HAS_PIECE) //Argument = size_t*
+	{
+		size_t _requestedPieceIndex = *((size_t*)__querySpecificArguments);
+		uint8_t* _toReturn = malloc(sizeof(uint8_t));
+		_toReturn[0] = tcppeer_hasPiece(_thePeer,_requestedPieceIndex);
+		return _toReturn;
 
+	}
+	else if (__queryType == SWARM_QUERY_DRAIN_PIECE) //Argument = NULL
+	{
+		size_t _currentPieceCount = conc_queue_count(_thePeer->peerIncomingPieceData);
+		if (_currentPieceCount > 0)
+		{
+			return conc_queue_pop(_thePeer->peerIncomingPieceData);
+		}
+	}
+
+	return NULL;
+}

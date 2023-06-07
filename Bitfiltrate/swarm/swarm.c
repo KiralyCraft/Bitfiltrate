@@ -96,4 +96,15 @@ swarm_filters_peerdata_t* swarm_filterPeer(swarm_t* __theSwarm,swarm_filters_pee
 	return _filteredData;
 }
 
+/*
+ * Queries the given peer based on certain criteria.
+ */
+void* swarm_query_peer(swarm_t* __theSwarm, void* __theImplementedPeer, swarm_query_type_e __queryType, void* __querySpecificArguments)
+{
+	pthread_mutex_lock(&__theSwarm->peerManipulationMutex);
+	swarm_definition_t* _theSwarmDefinition = __theSwarm->currentSwarmDefinition;
+	void* _queriedData = _theSwarmDefinition->peerQueryFunction(__theImplementedPeer,__queryType,__querySpecificArguments);
+	pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
+	return _queriedData;
 
+}

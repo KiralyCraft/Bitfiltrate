@@ -15,6 +15,8 @@
 
 #include "dlinkedlist.h"
 
+#define SWARM_PIECESIZE_LOG2_START 19
+
 void _watchdog_peerswarm_executor(void* __watchdogContext);
 
 watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool)
@@ -27,7 +29,7 @@ watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_
 	watchdog_peerswarm_t* _newPeerSwarmWatchdog = malloc(sizeof(watchdog_peerswarm_t));
 	_newPeerSwarmWatchdog -> thePeerSwarm = _peerSwarm;
 	_newPeerSwarmWatchdog -> swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
-	_newPeerSwarmWatchdog -> swarmPieceSize = 21;
+	_newPeerSwarmWatchdog -> swarmPieceSize = 19;
 	conc_queue_init(&_newPeerSwarmWatchdog -> peerIngestionQueue);
 
 	//=== SUBMITTING THE WATCHDOG ===
@@ -139,14 +141,36 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 			else
 			{
 				printf("log2 Piece size confirmed! %d\n",_watchdogData->swarmPieceSize);
+				_watchdogData->swamExecutionMode = SWARM_EXEC_DOWNLOAD;
 			}
 		}
 	}
 	else if (_theSwarmExecutionMode == SWARM_EXEC_DOWNLOAD)
 	{
-		//TODO aici ai ramas, get the bitfield data and everything
-		faceai un swarm_drainPeerData care returna date din peer, iar cand nu mai sunt da null - e sincronizat corect si corespunzator
-		apoi o chestie asemanatoare cu reconstruirea bitfieldului si a pieces
+		//=== FILTERING THE PEERS, TAKING ONLY CONNECTED ONES ===
+		peer_networkconfig_status_h _desiredPeerNetworkStatus = PEER_CONNECTED;
+		swarm_filters_peerdata_criteria_t _peerConnectedFilter;
+		_peerConnectedFilter.peerFilterCriteria = SWARM_PEERFILTER_NETWORKSTATUS;
+		_peerConnectedFilter.peerFilterData = &_desiredPeerNetworkStatus;
+
+		swarm_filters_peerdata_t* _filteredConnectedPeers = swarm_filterPeer(_watchdogData->thePeerSwarm,&_peerConnectedFilter);
+		if (_filteredConnectedPeers == NULL)
+		{
+			printf("Failed when filtering connected peers\n");
+			return;
+		}
+		//=== ITERATING FILTERED PEERS ===
+		size_t _connectedPeerCount = dlinkedlist_getCount(_filteredConnectedPeers->peerData);
+		for (size_t _connectedPeerIterator = 0; _connectedPeerIterator < _connectedPeerCount; _connectedPeerIterator++)
+		{
+			void* _theConnectedIteratedPeer = dlinkedlist_getPosition(_connectedPeerIterator,_filteredConnectedPeers->peerData);
+			void* _queriedData = swarm_query_peer(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,SWARM_QUERY_PIECE_COUNT,NULL);
+		}
+		//=== CLEANUP THE FILTERS ===
+		swarm_filters_destroyPeerFilterBucket(_filteredConnectedPeers);
+
+//		faceai un swarm_drainPeerData care returna date din peer, iar cand nu mai sunt da null - e sincronizat corect si corespunzator
+//		apoi o chestie asemanatoare cu reconstruirea bitfieldului si a pieces
 	}
 }
 

@@ -21,7 +21,7 @@ typedef struct
 {
 	conc_queue_item* lastItem;
 	conc_queue_item* rootItem;
-	uint32_t queueCount;
+	size_t queueCount;
 	pthread_mutex_t queueMutex;
 	pthread_cond_t queuePopCondvar;
 	pthread_cond_t queuePushCondvar;
@@ -30,7 +30,8 @@ typedef struct
 void conc_queue_init(conc_queue** __theQueue);
 void conc_queue_push(conc_queue* __theQueue, void* __theItem);
 void* conc_queue_pop(conc_queue* __theQueue);
-uint32_t conc_queue_count(conc_queue* __theQueue);
+void* conc_queue_popifpossible(conc_queue* __theQueue);
+size_t conc_queue_count(conc_queue* __theQueue);
 void conc_queue_destroy(conc_queue* __theQueue);
 
 

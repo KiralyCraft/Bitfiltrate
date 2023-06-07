@@ -14,6 +14,7 @@
 #include "dlinkedlist.h"
 #include "swarm_message_types.h"
 #include "swarm_filters.h"
+#include "swarm_query.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -54,12 +55,22 @@ struct swarm_definition_t
 	 * This function is used to filter the peers from the given swarm data according to the specified criteria.
 	 */
 	swarm_filters_peerdata_t* (*filterPeers)(dlinkedlist_t*,swarm_filters_peerdata_criteria_t*);
+
+	/*
+	 * This function is used to query given peers based on certain attributes.
+	 * The first argument is the implementation specific representation of a peer, followed by the query type and the arguments that it may
+	 * require.
+	 *
+	 * The success of this function is determined by the query type.
+	 */
+	void* (*peerQueryFunction)(void*,swarm_query_type_e,void*);
 	//==== INTERNAL USE ====
 	void (*outgoingFunction)(void*,void*,void*);
 	void* (*incomingFunction)(void*,void*);
 	void* (*processingFunction)(void*);
 	//==== CALLBACKS ====
 	void (*postProcessingFunction)(void*);
+
 };
 
 typedef struct
@@ -115,5 +126,16 @@ void swarm_postProcessPeerData(void* __thePeerData);
  * Methods that call this function should clear the received package bundle.
  */
 swarm_filters_peerdata_t* swarm_filterPeer(swarm_t* __theSwarm,swarm_filters_peerdata_criteria_t* __peerFilterCriteria);
+
+/*
+ * Used to query peers of this swarm about various things, and returns results accordingly.
+ * Whether or not the query succeeded highly depends on the specific query type.
+ *
+ * Results returned by this function should be freed accordingly by the caller.
+ *
+ * This method is THREAD SAFE.
+ */
+void* swarm_query_peer(swarm_t* __theSwarm, void* __theImplementedPeer, swarm_query_type_e __queryType, void* __querySpecificArguments);
+
 
 #endif /* SWARM_POOL_SWARM_H_ */

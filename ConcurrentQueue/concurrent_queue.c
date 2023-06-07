@@ -42,13 +42,16 @@ void conc_queue_push(conc_queue* __theQueue, void* __theItemToPush)
 	pthread_cond_signal (&__theQueue->queuePopCondvar);
 	pthread_mutex_unlock(&__theQueue->queueMutex);
 }
-void* conc_queue_pop(conc_queue* __theQueue)
+void* _conc_queue_universalpop(conc_queue* __theQueue,uint8_t __shouldBlock)
 {
-	pthread_mutex_lock (&__theQueue->queueMutex);
-
-	while (__theQueue->queueCount == 0)
+	if (__shouldBlock)
 	{
-		pthread_cond_wait (&__theQueue->queuePopCondvar, &__theQueue->queueMutex);
+		pthread_mutex_lock (&__theQueue->queueMutex);
+
+		while (__theQueue->queueCount == 0)
+		{
+			pthread_cond_wait (&__theQueue->queuePopCondvar, &__theQueue->queueMutex);
+		}
 	}
 
 	conc_queue_item* _lastItem = __theQueue->rootItem;
@@ -66,17 +69,46 @@ void* conc_queue_pop(conc_queue* __theQueue)
 	__theQueue->queueCount--;
 	free(_lastItem);
 
-	//TODO never used because there is no upper limit for this queue
-//	pthread_cond_signal (&__theQueue->queuePushCondvar);
-	pthread_mutex_unlock(&__theQueue->queueMutex);
+
+	if (__shouldBlock)
+	{
+		// never used because there is no upper limit for this queue
+		//	pthread_cond_signal (&__theQueue->queuePushCondvar);
+		pthread_mutex_unlock(&__theQueue->queueMutex);
+	}
 	return _toReturn;
 }
 
-inline uint32_t conc_queue_count(conc_queue* __theQueue)
+size_t _conc_queue_univresalcount(conc_queue* __theQueue,uint8_t __shouldBlock)
 {
-	return __theQueue -> queueCount;
+	if (__shouldBlock) pthread_mutex_lock (&__theQueue->queueMutex);
+	size_t _toReturn = __theQueue -> queueCount;
+	if (__shouldBlock) pthread_mutex_unlock (&__theQueue->queueMutex);
+	return _toReturn;
 }
 
+inline size_t conc_queue_count(conc_queue* __theQueue)
+{
+	return _conc_queue_univresalcount(__theQueue,1);
+}
+
+
+inline void* conc_queue_pop(conc_queue* __theQueue)
+{
+	return _conc_queue_universalpop(__theQueue,1);
+}
+
+void* conc_queue_popifpossible(conc_queue* __theQueue)
+{
+	void* _toReturn = NULL;
+	pthread_mutex_lock (&__theQueue->queueMutex);
+	if (_conc_queue_univresalcount(__theQueue,0) > 0)
+	{
+		_toReturn = _conc_queue_universalpop(__theQueue,0);
+	}
+	pthread_mutex_unlock (&__theQueue->queueMutex);
+	return _toReturn;
+}
 void conc_queue_destroy(conc_queue* __theQueue)
 {
 	; //TODO this please, clean the queue and destroy the mutexes and conditional variables

@@ -23,6 +23,14 @@
  */
 void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcppeer_t* __thePeer,void* __optionalArguments)
 {
+//	aici puneai o regula ca daca length e deja 0 sa nu check, pentru ca nu are date keep-alive
+
+	//=== SPECIAL CHECKS ===
+	if (__packagedPacket->packetSize == 0)
+	{
+		return; //Do not even attempt to process messages with 0 length (likely keep-alive)
+	}
+
 	//=== PROCESSING THE PACKET ===
 	uint8_t _packetTypeID = __packagedPacket->packetData[0];
 	uint8_t* _packetDataOffset =  __packagedPacket->packetData+1;
