@@ -18,15 +18,11 @@
 
 typedef enum
 {
-	SWARM_EXEC_NORMAL,
+	SWARM_EXEC_DOWNLOAD,
 	SWARM_EXEC_GUESS_PIECE_SIZE,
 	SWARM_EXEC_CONFIRM_PIECE_SIZE
 } watchdog_peerswarm_execution_mode_e;
 
-//typedef enum
-//{
-//	time_t
-//} watchdog_peerswarm_guessdata_t;
 typedef struct
 {
 	//==== API VARIABLES ===
@@ -54,6 +50,7 @@ typedef struct
 
 	//=== PROTOCOL HACKS ===
 	time_t timeGuessedPiece;
+	time_t timeLastPeerIngested;
 
 } watchdog_peerswarm_t;
 

@@ -27,7 +27,7 @@ watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_
 	watchdog_peerswarm_t* _newPeerSwarmWatchdog = malloc(sizeof(watchdog_peerswarm_t));
 	_newPeerSwarmWatchdog -> thePeerSwarm = _peerSwarm;
 	_newPeerSwarmWatchdog -> swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
-	_newPeerSwarmWatchdog -> swarmPieceSize = 30;
+	_newPeerSwarmWatchdog -> swarmPieceSize = 21;
 	conc_queue_init(&_newPeerSwarmWatchdog -> peerIngestionQueue);
 
 	//=== SUBMITTING THE WATCHDOG ===
@@ -54,14 +54,23 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 	{
 		printf("WATCHDOG popping peer for ingestion\n");
 		peer_networkconfig_h* _poppedPeerConfiguration = conc_queue_pop(_watchdogData->peerIngestionQueue);
-		swarm_ingestPeer(_watchdogData->thePeerSwarm,_poppedPeerConfiguration); //This method is thread safe
+		uint8_t _ingestResult = swarm_ingestPeer(_watchdogData->thePeerSwarm,_poppedPeerConfiguration); //This method is thread safe
+		if (_ingestResult == 0)
+		{
+			; //TODO handle ingest failure
+		}
+
+		_watchdogData->timeLastPeerIngested = time(NULL);
 	}
 
 	//=== SWARM EXECUTION MODES ===
 	watchdog_peerswarm_execution_mode_e _theSwarmExecutionMode = _watchdogData->swamExecutionMode;
 	if (_theSwarmExecutionMode == SWARM_EXEC_GUESS_PIECE_SIZE)
 	{
-
+		if (difftime(time(NULL),_watchdogData->timeLastPeerIngested) < 5)
+		{
+			return;
+		}
 		//=== FIGURING OUT CONNECTED PEER COUNT ===
 		peer_networkconfig_status_h _desiredPeerNetworkStatus = PEER_CONNECTED;
 		swarm_filters_peerdata_criteria_t _peerConnectedFilter;
@@ -78,6 +87,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 
 		if (_connectedPeerCount > 0)
 		{
+			printf("DEBUG: Watchdog probing peers\n");
 			//=== COMPUTING OFFSET ===
 			uint32_t _guessedPieceSize = (1 << _watchdogData->swarmPieceSize);
 			//=== SENDING OUT REQUESTS FOR THE CURRENT PIECE SIZE ===
@@ -94,7 +104,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 				uint8_t _requestResult = swarm_requestPiece(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,0,_guessedPieceSize-1,1); //TODO is this really the right place to request packets from? does it need to be thread safe?
 				if (_requestResult == 0)
 				{
-					printf("Failed to request peicefrom peer\n");
+					printf("Failed to request peice from peer\n");
 					//TODO Handle request errors
 				}
 			}
@@ -122,8 +132,8 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 
 			if (_peerReceivedDataCount == 0)
 			{
-				_watchdogData->swarmPieceSize--;
 				printf("DEBUG: The piece size isn't %d, decreasing\n",_watchdogData->swarmPieceSize);
+				_watchdogData->swarmPieceSize--;
 				_watchdogData->swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
 			}
 			else
@@ -131,6 +141,12 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 				printf("log2 Piece size confirmed! %d\n",_watchdogData->swarmPieceSize);
 			}
 		}
+	}
+	else if (_theSwarmExecutionMode == SWARM_EXEC_DOWNLOAD)
+	{
+		//TODO aici ai ramas, get the bitfield data and everything
+		faceai un swarm_drainPeerData care returna date din peer, iar cand nu mai sunt da null - e sincronizat corect si corespunzator
+		apoi o chestie asemanatoare cu reconstruirea bitfieldului si a pieces
 	}
 }
 
