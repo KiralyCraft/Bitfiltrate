@@ -65,4 +65,15 @@ uint8_t tcppeer_setBitfieldByte(tcppeer_t* __thePeer, size_t __bitfieldByteIndex
 uint8_t tcppeer_hasPiece(tcppeer_t* __thePeer,size_t __thePieceIndex);
 uint8_t tcppeer_setPiece(tcppeer_t* __thePeer,size_t __thePieceIndex,uint8_t __hasPiece);
 
+/*
+ * Based on the current bitfield stored in this peer, this function should return the highest piece index
+ * which this peer advertises to have.
+ *
+ * This function assumes that piece indexes start from zero, and therefore the highest index in the bitfield,
+ * assumming a complete bitfield, should be the number of pieces minus one.
+ *
+ * This operation is absolutely THREAD SAFE!
+ */
+size_t tcppeer_getHighestBitfieldPiece(tcppeer_t* __thePeer);
+
 #endif /* SWARM_TCPPEER_H_ */

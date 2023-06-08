@@ -117,3 +117,29 @@ uint8_t tcppeer_setPiece(tcppeer_t* __thePeer,size_t __thePieceIndex,uint8_t __h
 	pthread_mutex_unlock(&(__thePeer->bitfieldMutex));
 	return _resultToReturn;
 }
+size_t tcppeer_getHighestBitfieldPiece(tcppeer_t* __thePeer)
+{
+	pthread_mutex_lock(&(__thePeer->bitfieldMutex));
+	dlinkedlist_t* _bitfieldList = __thePeer -> peerBitfield;
+	size_t _currentByteCount = dlinkedlist_getCount(_bitfieldList);
+
+	for (size_t _pieceByteIterator = _currentByteCount-1; _pieceByteIterator > 0; _pieceByteIterator--)
+	{
+		uint8_t _pieceByteData = *((uint8_t*)dlinkedlist_getPosition(_pieceByteIterator, _bitfieldList));
+        if (_pieceByteData != 0) //If this piece has any bytes at all
+        {
+        	for (int8_t j = PIECES_PER_BYTE - 1; j >= 0; j--)
+        	{
+				if (((_pieceByteData >> j) & 0x1) == 1)
+				{
+					size_t _completePieces = _pieceByteIterator*PIECES_PER_BYTE + (PIECES_PER_BYTE-j);
+					pthread_mutex_unlock(&(__thePeer->bitfieldMutex));
+					return _completePieces;
+				}
+			}
+        }
+	}
+
+	pthread_mutex_unlock(&(__thePeer->bitfieldMutex));
+	return 0;
+}

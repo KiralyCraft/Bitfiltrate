@@ -56,13 +56,20 @@ typedef struct
 	 */
 	piecetracker_t* thePieceTracker;
 
+	/*
+	 * The time when an actual block has been requested from the swarm.
+	 *
+	 * This value should be initialized with zero if no block has been requested yet.
+	 */
+	time_t timeLastRequestedActualBlock;
+
 	//=== PROTOCOL HACKS ===
 	time_t timeGuessedPiece;
 	time_t timeLastPeerIngested;
 
 } watchdog_peerswarm_t;
 
-watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool);
+watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool, piecetracker_t* __thePieceTracker);
 
 /*
  * This is a function which should accept the given peer and add it to the watchdog (and therefore the pool).

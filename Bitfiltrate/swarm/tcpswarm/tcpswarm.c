@@ -146,7 +146,7 @@ swarm_filters_peerdata_t* _tcpswarm_peerFilterFunction(dlinkedlist_t* __thePeerL
 void* _tcpswarm_peerQueryFunction(void* __theImplementedPeer, swarm_query_type_e __queryType, void* __querySpecificArguments)
 {
 	tcppeer_t* _thePeer = __theImplementedPeer;
-	if (__queryType == SWARM_QUERY_PIECE_COUNT) //Argument = NULL
+	if (__queryType == SWARM_QUERY_BLOCK_COUNT) //Argument = NULL
 	{
 		size_t* _toReturn = malloc(sizeof(size_t));
 		_toReturn[0] = conc_queue_count(_thePeer->peerIncomingBlockData);
@@ -163,6 +163,12 @@ void* _tcpswarm_peerQueryFunction(void* __theImplementedPeer, swarm_query_type_e
 	else if (__queryType == SWARM_QUERY_DRAIN_PIECE) //Argument = NULL
 	{
 		return conc_queue_popifpossible(_thePeer->peerIncomingBlockData);
+	}
+	else if (__queryType == SWARM_QUERY_HIGHEST_BITFIELD_PIECE) //Argument = NULL
+	{
+		size_t* _toReturn = malloc(sizeof(uint8_t));
+		_toReturn[0] = tcppeer_getHighestBitfieldPiece(_thePeer);
+		return _toReturn;
 	}
 
 	return NULL;

@@ -82,11 +82,6 @@ void _tcpswarm_outgoingFunction(void* __socketDescriptor, void* __outgoingData, 
 	tcppeer_t* _thePeerDetails = __socketDescriptor;
 	peer_networkconfig_h* _thePeerNetworkConfiguration = _thePeerDetails -> peerNetworkConfig;
 
-	if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_ERROR)
-	{
-		return; //If the peer is currently an error, do not bother to send data to it anymore, despite being asked to do so.
-	}
-
 	if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_NEWBORN) //If we are attempting to send data to a peer, but no actual connection has been established yet
 	{
 		pthread_mutex_lock(&(_thePeerDetails->syncMutex));
@@ -100,14 +95,21 @@ void _tcpswarm_outgoingFunction(void* __socketDescriptor, void* __outgoingData, 
 		}
 	}
 
-
+	//=== HANDLE ERROR SITUATION WITH PENDING PACKETS OUTGOING ===
 	tcpswarm_packet_t* _theOutgoingPacket = __outgoingData;
-
-	int _socketDescriptor = _thePeerNetworkConfiguration->peerSocket;
 	uint8_t* _theActualOutgoingData = _theOutgoingPacket -> packetData;
 	size_t _theActualOutgoingDataLength = _theOutgoingPacket -> packetSize;
 
+	if (_thePeerNetworkConfiguration->peerConnectionStatus == PEER_ERROR)
+	{
+		free(_theActualOutgoingData);
+		free(_theOutgoingPacket);
+		return; //If the peer is currently an error, do not bother to send data to it anymore, despite being asked to do so.
+	}
 
+	//=== HANDLE NORMAL OPERATION ===
+
+	int _socketDescriptor = _thePeerNetworkConfiguration->peerSocket;
 	uint8_t* _currentDataLocation = _theActualOutgoingData;
 	uint32_t _totalWrittenBytes = 0;
 
@@ -120,7 +122,13 @@ void _tcpswarm_outgoingFunction(void* __socketDescriptor, void* __outgoingData, 
 			_chunkSize = TCP_CHUNK_SIZE; //Limit it to our imposed limit
 		}
 
-		uint32_t _bytesWritten = write(_socketDescriptor, _currentDataLocation + _totalWrittenBytes, _chunkSize); //Account for this thing being an error
+		int32_t _bytesWritten = write(_socketDescriptor, _currentDataLocation + _totalWrittenBytes, _chunkSize); //Account for this thing being an error
+
+		if (_bytesWritten == -1)
+		{
+			_thePeerNetworkConfiguration -> peerConnectionStatus = PEER_ERROR;
+			break; //Write failed, peer returned error out
+		}
 
 		_totalWrittenBytes = _totalWrittenBytes + _bytesWritten;
 	}
@@ -142,7 +150,11 @@ uint8_t _tcpswarm_readExactByteCount(int __thePeerSocket,void* __theBuffer,size_
 	while (_totalBytesRead < __byteCountToRead)
 	{
 		int32_t _bytesRead = read(__thePeerSocket, _bufferLocation + _totalBytesRead, __byteCountToRead - _totalBytesRead);
-		if (_bytesRead == -1)
+		if (_bytesRead == -1) //Severe and obivous error
+		{
+			return 0;
+		}
+		else if (_bytesRead == 0) //Subtle connection close on the other side
 		{
 			return 0;
 		}
@@ -171,7 +183,7 @@ void* _tcpswarm_incomingFunction(void* __socketDescriptor, void* __optionalArgum
 
 		if (_readCountAttempt == 0)
 		{
-			; //TODO handle situation where not enough bytes have been read
+			_thePeerNetworkConfiguration -> peerConnectionStatus = PEER_ERROR;
 			return NULL;
 		}
 		else
@@ -182,7 +194,7 @@ void* _tcpswarm_incomingFunction(void* __socketDescriptor, void* __optionalArgum
 			}
 			else
 			{
-				//TODO handle incorrect handshake.
+				_thePeerNetworkConfiguration -> peerConnectionStatus = PEER_ERROR;
 				return NULL;
 			}
 		}
