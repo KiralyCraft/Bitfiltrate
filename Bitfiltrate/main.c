@@ -48,7 +48,8 @@ int main()
 //
 	conpool_t* theConnectionPool = conpool_createPool();
 	conpool_t* theSwarmConnectionPool = conpool_createPool();
-	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.01-amd64.iso.torrent");
+//	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.01-amd64.iso.torrent");
+	torrent_t* _theTorrent = torrent_dummyHashTorrent("84130aa9cb8503ad4330bb8e6c69129c1d2f4464");
 	piecetracker_t* _thePieceTracker = piecetracker_constructTracker();
 	watchdog_peerswarm_t* _thePeerSwarm = watchdog_peerswarm_init(_theWatchdog,_theTorrent,theSwarmConnectionPool,_thePieceTracker);
 

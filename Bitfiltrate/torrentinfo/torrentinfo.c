@@ -87,6 +87,18 @@ torrent_t* torrent_openTorrent(char* __filePath)
 	return NULL;
 }
 
+uint8_t _torrent_charToInt(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	else if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	else if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	else
+		return -1; // Invalid hexadecimal character
+}
+
 torrent_t* torrent_dummyHashTorrent(char* __asciiHash)
 {
 	torrent_t* _theTorrent = malloc(sizeof(torrent_t));
@@ -96,7 +108,9 @@ torrent_t* torrent_dummyHashTorrent(char* __asciiHash)
 		char _lowChar = __asciiHash[_stringIterator];
 		char _highChar = __asciiHash[_stringIterator+1];
 
-		uint8_t _theByte = (_lowChar - 'a' + 1)*16 + (_highChar - 'a');
-		printf("%d\n",_theByte);
+		uint8_t _theByte = _torrent_charToInt(_lowChar)*16 + _torrent_charToInt(_highChar);
+
+		_theTorrent->torrentHash[_stringIterator / 2] = _theByte;
 	}
+	return _theTorrent;
 }
