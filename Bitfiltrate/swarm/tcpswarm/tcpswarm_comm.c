@@ -76,7 +76,7 @@ uint8_t _tcpswarm_peerConnect(peer_networkconfig_h* __thePeerNetworkConfiguratio
 
 void _tcpswarm_outgoingFunction(void* __socketDescriptor, void* __outgoingData, void* __optionalArgument)
 {
-	printf("Sent some data!\n");
+//	printf("Sent some data!\n");
 	//TODO make sure the packet is freed after it has been sent.
 
 	tcppeer_t* _thePeerDetails = __socketDescriptor;
@@ -215,6 +215,7 @@ void* _tcpswarm_incomingFunction(void* __socketDescriptor, void* __optionalArgum
 		uint8_t _incomingMessageLengthReadAttempt = _tcpswarm_readExactByteCount(_thePeerNetworkConfiguration->peerSocket,_incomingMessageLengthBuffer,4);
 		if (_incomingMessageLengthReadAttempt == 0)
 		{
+			printf("Read 0 bytes wtf?\n");
 			//TODO handle failed to read message length
 		}
 

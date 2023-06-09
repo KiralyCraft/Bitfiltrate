@@ -48,5 +48,6 @@ typedef struct
 } torrent_t;
 
 torrent_t* torrent_openTorrent(char* __filePath);
+torrent_t* torrent_dummyHashTorrent(char* __asciiHASH);
 
 #endif /* TORRENTINFO_TORRENTINFO_H_ */

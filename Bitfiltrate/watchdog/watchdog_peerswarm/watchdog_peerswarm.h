@@ -19,9 +19,10 @@
 
 typedef enum
 {
-	SWARM_EXEC_DOWNLOAD,
 	SWARM_EXEC_GUESS_PIECE_SIZE,
-	SWARM_EXEC_CONFIRM_PIECE_SIZE
+	SWARM_EXEC_CONFIRM_PIECE_SIZE,
+	SWARM_EXEC_DOWNLOAD,
+	SWARM_EXEC_COMPLETE
 } watchdog_peerswarm_execution_mode_e;
 
 typedef struct
@@ -30,7 +31,14 @@ typedef struct
 	/*
 	 * This is the peer ingestion queue
 	 */
-	conc_queue* peerIngestionQueue;
+	conc_queue_t* peerIngestionQueue;
+
+	/*
+	 * The piece tracker which keeps track of what pieces have been received thus far.
+	 *
+	 * This piece tracker should be received externally.
+	 */
+	piecetracker_t* thePieceTracker;
 
 	//==== INTERNAL USE ===
 	/*
@@ -49,23 +57,24 @@ typedef struct
 	 */
 	uint8_t swarmPieceSize;
 
-	/*
-	 * The piece tracker which keeps track of what pieces have been received thus far.
-	 *
-	 * This piece tracker should be received externally.
-	 */
-	piecetracker_t* thePieceTracker;
+//	/*
+//	 * The time when an actual block has been requested from the swarm.
+//	 *
+//	 * This value should be initialized with zero if no block has been requested yet.
+//	 */
+//	time_t timeLastRequestedActualBlock;
 
 	/*
-	 * The time when an actual block has been requested from the swarm.
-	 *
-	 * This value should be initialized with zero if no block has been requested yet.
+	 * In order to check whether or not we can request a new block, we compare the last wish
+	 * with what we would wish now.
 	 */
-	time_t timeLastRequestedActualBlock;
+	piecetracker_wishlist_t* lastWishedBlock;
 
 	//=== PROTOCOL HACKS ===
 	time_t timeGuessedPiece;
 	time_t timeLastPeerIngested;
+	time_t timeWishLastFulfilled;
+	time_t timeLastBitfieldUpdate;
 
 } watchdog_peerswarm_t;
 

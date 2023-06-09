@@ -11,9 +11,12 @@
 #include "watchdog/watchdog.h"
 #include "watchdog/watchdog_udptracker/watchdog_udptracker.h"
 #include "watchdog/watchdog_peerswarm/watchdog_peerswarm.h"
+#include "watchdog/watchdog_diskio/watchdog_diskio.h"
 
 #include "swarm/swarm.h"
 #include "swarm/tcpswarm/tcpswarm.h"
+
+#include "peerfeed/peerfeed.h"
 
 int main()
 {
@@ -40,15 +43,19 @@ int main()
 
 //	swarm_t* _thePeerSwarm = swarm_createPeerSwarm();
 
+	//=========================
 	watchdog_t* _theWatchdog = watchdog_createWatchdogSupervisor();
-
+//
 	conpool_t* theConnectionPool = conpool_createPool();
 	conpool_t* theSwarmConnectionPool = conpool_createPool();
 	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.01-amd64.iso.torrent");
 	piecetracker_t* _thePieceTracker = piecetracker_constructTracker();
 	watchdog_peerswarm_t* _thePeerSwarm = watchdog_peerswarm_init(_theWatchdog,_theTorrent,theSwarmConnectionPool,_thePieceTracker);
 
-	watchdog_udptracker_init(_theTorrent,"tracker.openbittorrent.com",6969,_theWatchdog,_thePeerSwarm,theConnectionPool);
+	peerfeed_ingestPeersFromFile(_thePeerSwarm->peerIngestionQueue,"peers.txt");
+//
+	watchdog_diskio_t* _theDiskioWatchdog = watchdog_diskio_init(_theWatchdog,_thePieceTracker);
+//	watchdog_udptracker_init(_theTorrent,"tracker.openbittorrent.com",6969,_theWatchdog,_thePeerSwarm,theConnectionPool);
 
 	getchar();
 }

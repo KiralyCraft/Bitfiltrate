@@ -25,14 +25,14 @@ typedef struct
 	pthread_mutex_t queueMutex;
 	pthread_cond_t queuePopCondvar;
 	pthread_cond_t queuePushCondvar;
-} conc_queue;
+} conc_queue_t;
 
-void conc_queue_init(conc_queue** __theQueue);
-void conc_queue_push(conc_queue* __theQueue, void* __theItem);
-void* conc_queue_pop(conc_queue* __theQueue);
-void* conc_queue_popifpossible(conc_queue* __theQueue);
-size_t conc_queue_count(conc_queue* __theQueue);
-void conc_queue_destroy(conc_queue* __theQueue);
+void conc_queue_init(conc_queue_t** __theQueue);
+void conc_queue_push(conc_queue_t* __theQueue, void* __theItem);
+void* conc_queue_pop(conc_queue_t* __theQueue);
+void* conc_queue_popifpossible(conc_queue_t* __theQueue);
+size_t conc_queue_count(conc_queue_t* __theQueue);
+void conc_queue_destroy(conc_queue_t* __theQueue);
 
 
 #endif /* UTILS_QUEUE_QUEUE_H_ */

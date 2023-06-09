@@ -52,9 +52,14 @@ void* conpool_executorReceivingFunction(void* __providedData)
 		_dataBundle[2] = _connectionDetails->optionalArgument;
 		//==== LAUNCH BACKGROUND EXECUTION OF DATA ====
 		pthread_t _processingThread;
-		int _processingCreationResult = pthread_create(&_processingThread,NULL,_connectionDetails->processingFunction,_dataBundle);
+		pthread_attr_t _threadAttributes;
+		pthread_attr_init(&_threadAttributes);
+		pthread_attr_setdetachstate(&_threadAttributes, PTHREAD_CREATE_DETACHED);
+
+		int _processingCreationResult = pthread_create(&_processingThread,&_threadAttributes,_connectionDetails->processingFunction,_dataBundle);
 		if (_processingCreationResult != 0)
 		{
+			printf("DEBUG: Executor failed to launch processing thread for read packet!\n");
 			; //TODO handle processing error
 		}
 	}

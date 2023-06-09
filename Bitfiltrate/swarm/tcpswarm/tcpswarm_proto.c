@@ -18,6 +18,8 @@
  * This is a helper function that gets called by the processing function. It's purpose is to serve
  * as an encapsulated way of processing data which automatically gets cleared afterwards, such as the packaged packet.
  *
+ * Packets processed here are destroyed afterwards.
+ *
  * This function is always called ASYNCHRONOUSLY, just like the wrapper.
  */
 void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcppeer_t* __thePeer,void* __optionalArguments)
@@ -38,7 +40,6 @@ void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcpp
 	uint8_t _packetSeenMask = 1 << _packetTypeID;
 	__thePeer->packetsReceivedBitfield |= _packetSeenMask;
 	//=== HANDLING PACKET ===
-	printf("Got packet of type %d\n",_packetTypeID);
 	if (_packetTypeID == 0) //Choked
 	{
 		__thePeer->peerChoking = 1; //TODO change these things to functions inside the peer definition, and call functions to set them
@@ -67,6 +68,7 @@ void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcpp
 	}
 	else if (_packetTypeID == 5) //Bitfield
 	{
+		printf("Recevied BITFIELD\n");
 		size_t _receivedBitfieldSize = (__packagedPacket->packetSize - 1)/(sizeof(uint8_t));
 
 		for (size_t _bitfieldByteIterator = 0; _bitfieldByteIterator < _receivedBitfieldSize; _bitfieldByteIterator++)

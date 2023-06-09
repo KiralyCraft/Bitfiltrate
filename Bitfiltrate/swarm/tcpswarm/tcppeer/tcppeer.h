@@ -19,7 +19,7 @@ typedef struct
 {
 	//==== CONNECTIVITY ====
 	peer_networkconfig_h* peerNetworkConfig;
-	conc_queue* peerOutgoingPacketQueue;
+	conc_queue_t* peerOutgoingPacketQueue;
 	//==== PEER-SPECIFIC ===
 
 	uint8_t amChocking;
@@ -40,7 +40,7 @@ typedef struct
 	 * This queue holds data for the this peer, that it has been sent over the network.
 	 * No order is done here, and this data should be evacuated by an utility as soon as possible.
 	 */
-	conc_queue* peerIncomingBlockData;
+	conc_queue_t* peerIncomingBlockData;
 
 	/*
 	 * This is a byte corresponding to the 8+1 possible messages that this peer can receive.

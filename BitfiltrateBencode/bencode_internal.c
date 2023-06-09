@@ -132,7 +132,7 @@ bencode_et* bencode_readNext(bencode_t* __providedBencode)
 	{
 		_bencode_incrementOffset(__providedBencode);
 
-		conc_queue* _pendingQueue;
+		conc_queue_t* _pendingQueue;
 		conc_queue_init(&_pendingQueue);
 
 		while(bencode_probeType(__providedBencode) != BENCODE_TERMINATOR) //You've just entered the list, continue iterating over it recursively until there's nothing left
@@ -161,7 +161,7 @@ bencode_et* bencode_readNext(bencode_t* __providedBencode)
 	{
 		_bencode_incrementOffset(__providedBencode);
 
-		conc_queue* _pendingQueue;
+		conc_queue_t* _pendingQueue;
 		conc_queue_init(&_pendingQueue);
 
 		while(bencode_probeType(__providedBencode) != BENCODE_TERMINATOR) //Enter the dictionary

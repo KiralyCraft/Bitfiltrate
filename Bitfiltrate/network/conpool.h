@@ -26,7 +26,7 @@ typedef struct
 	/*
 	 * The queue of packets submitted by the sender, waiting for the ConPool to send them.
 	 */
-	conc_queue* outgoingPacketQueue;
+	conc_queue_t* outgoingPacketQueue;
 
 	/*
 	 * The execution context which is passed to the processing function as a bundle.
@@ -121,7 +121,7 @@ uint8_t conpool_destroyPool(conpool_t* __thePool);
  * This function may return NULL if the connection failed to be set up.
  * NOTE: Currently, connections cannot be destroyed unless the whole pool goes down.
  */
-conc_queue* conpool_createConnection(conpool_t* __theConnectionPool, void* __socketDescription,void (*__outgoingFunction)(void*,void*,void*),void* (*__incomingFunction)(void*,void*),void* (*__processingFunction)(void*),void* __executionContext,void* __optionalArgument);
+conc_queue_t* conpool_createConnection(conpool_t* __theConnectionPool, void* __socketDescription,void (*__outgoingFunction)(void*,void*,void*),void* (*__incomingFunction)(void*,void*),void* (*__processingFunction)(void*),void* __executionContext,void* __optionalArgument);
 
 //TODO implement connection destruction (based on the pointers of the queue?)
 

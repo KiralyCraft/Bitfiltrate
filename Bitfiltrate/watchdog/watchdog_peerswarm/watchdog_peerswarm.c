@@ -32,7 +32,11 @@ watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_
 	_newPeerSwarmWatchdog -> swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
 	_newPeerSwarmWatchdog -> swarmPieceSize = 19;
 	_newPeerSwarmWatchdog -> thePieceTracker = __thePieceTracker;
-	_newPeerSwarmWatchdog -> timeLastRequestedActualBlock = 0;
+	_newPeerSwarmWatchdog -> lastWishedBlock = NULL;
+	_newPeerSwarmWatchdog -> timeGuessedPiece = 0;
+	_newPeerSwarmWatchdog -> timeLastPeerIngested = 0;
+	_newPeerSwarmWatchdog -> timeWishLastFulfilled = 0;
+	_newPeerSwarmWatchdog -> timeLastBitfieldUpdate = 0;
 	conc_queue_init(&_newPeerSwarmWatchdog -> peerIngestionQueue);
 
 	//=== SUBMITTING THE WATCHDOG ===
@@ -161,7 +165,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 							printf("DEBUG: Peer %lu drained of test data\n",_connectedPeerIterator);
 							break;
 						}
-						swarm_block_destroyBlockWrapper(theData);
+						swarm_block_destroyBlockDataAndWrapper(theData);
 					}
 				}
 
@@ -173,6 +177,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 	}
 	else if (_theSwarmExecutionMode == SWARM_EXEC_DOWNLOAD)
 	{
+//		undeva aici in download e leak-ul
 		//=== FILTERING THE PEERS, TAKING ONLY CONNECTED ONES ===
 		peer_networkconfig_status_h _desiredPeerNetworkStatus = PEER_CONNECTED;
 		swarm_filters_peerdata_criteria_t _peerConnectedFilter;
@@ -185,24 +190,57 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 			printf("Failed when filtering connected peers\n");
 			return;
 		}
-		//=== GETTING SAMPLE PIECE INDEX, BLOCK AND SIZE FROM PIECETRACKER ===
-
-		piecetracker_status_e _currentPieceTrackerStatus = piecetracker_getCurrentStatus(_watchdogData->thePieceTracker);
+		//=== GETTING WISHLIST FROM PIECETRACKER ===
+		uint8_t _areWeWishing = 0;
 		piecetracker_wishlist_t* _wishedBlock = NULL;
 
+		piecetracker_status_e _currentPieceTrackerStatus = piecetracker_getCurrentStatus(_watchdogData->thePieceTracker);
 		if (_currentPieceTrackerStatus == PIECETRACKER_OPERATIONAL)
 		{
-			//TODO proceed to request sample.
-			//TODO verifica daca maximum piece count ramane egal cu count de uesd pentru o perioada, consdier it done
-			//TODO do not spam the peers with data, wait a few seconds between requesting again
+			if (piecetracker_areAllPiecesUsed(_watchdogData->thePieceTracker) == 1 && difftime(time(NULL),_watchdogData->timeLastBitfieldUpdate) > 60)
+			{
+				printf("DEBUG: All pieces seem to be done, and no bifield updates happened for some time. Assuming complete!\n");
+				_watchdogData->swamExecutionMode = SWARM_EXEC_COMPLETE;
+				swarm_filters_destroyPeerFilterBucket(_filteredConnectedPeers);
+				return;
+			}
+
 			_wishedBlock = piecetracker_getWish(_watchdogData->thePieceTracker);
-//			printf("Wished block: %lu %lu %lu\n",_wishedBlock->wishedPieceIndex,_wishedBlock->wishedBlockIndex,_wishedBlock->wishedBlockSize);
+			if (_watchdogData->lastWishedBlock == NULL)
+			{
+				_watchdogData->lastWishedBlock = _wishedBlock;
+				_areWeWishing = 1;
+			}
+			else
+			{
+
+				uint8_t _isLastWishExpired = 0;
+				if (difftime(time(NULL),_watchdogData->timeWishLastFulfilled) > 10)
+				{
+					_isLastWishExpired = 1;
+					printf("DEBUG: Last wish has expired, requesting data again\n");
+				}
+
+				if (_isLastWishExpired || piecetracker_isWishFulfilled(_watchdogData->thePieceTracker,_watchdogData->lastWishedBlock))
+				{
+					_watchdogData->timeWishLastFulfilled = time(NULL);
+					piecetracker_destroyWish(_watchdogData->lastWishedBlock); //Once the old wish has been fulfilled, destroy it.
+
+					_watchdogData->lastWishedBlock = _wishedBlock;
+					_areWeWishing = 1;
+				}
+				else //If not expired and not fulfilled
+				{
+					piecetracker_destroyWish(_wishedBlock);
+				}
+			}
+//				printf("DEBUG: Wished block: %lu %lu %lu\n",_wishedBlock->wishedPieceIndex,_wishedBlock->wishedBlockIndex,_wishedBlock->wishedBlockSize);
 		}
 
 		//=== ITERATING FILTERED PEERS ===
 		uint8_t _hasRequestedFromPeers = 0;
-		time_t _timeOfCheck = time(NULL);
 		size_t _connectedPeerCount = dlinkedlist_getCount(_filteredConnectedPeers->peerData);
+
 		for (size_t _connectedPeerIterator = 0; _connectedPeerIterator < _connectedPeerCount; _connectedPeerIterator++)
 		{
 			void* _theConnectedIteratedPeer = dlinkedlist_getPosition(_connectedPeerIterator,_filteredConnectedPeers->peerData);
@@ -218,27 +256,80 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 			uint8_t _updateResult = piecetracker_setMaximumPieceCount(_watchdogData->thePieceTracker,(*_queriedData)+1); //Add one, because the query returns an index, not a count
 			if (_updateResult == 1)
 			{
+				_watchdogData->timeLastBitfieldUpdate = time(NULL);
 				printf("DEBUG: Watchdog updated max piece count of piece tracker!\n");
 			}
 			free(_queriedData); //TODO move this in a better manner, not like this
 
 			//=== REQUESTING DATA IF POSSIBLE===
-			if (_wishedBlock != NULL && difftime(_timeOfCheck,_watchdogData->timeLastRequestedActualBlock) > 5) //If we have a wish and at least 5 seconds have passed since the last request
+			if (_areWeWishing == 1 && _wishedBlock != NULL) //If we have a wish and are actually wishing
 			{
-				printf("Can request data! %lu\n",_timeOfCheck);
+//				printf("Can request data! %lu\n",_timeOfCheck);
+
+				uint8_t _resultInformInterested = swarm_informInterestedPeer(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer);
+				if (_resultInformInterested == 0)
+				{
+					printf("Failed to inform interested peer when downloading\n");
+					continue;
+				}
+				//=== SPECIFYING REQUEST DETAILS ===
+
+				size_t _wishedBlockIndexStart = _wishedBlock->wishedBlockIndexStart;
+				size_t _wishedBlockIndexEnd = _wishedBlock->wishedBlockIndexEnd;
+				printf("DEBUG: wishing for piece %lu\n",_wishedBlock->wishedPieceIndex);
+				for (size_t _blockWishIterator = _wishedBlockIndexStart; _blockWishIterator <= _wishedBlockIndexEnd; _blockWishIterator++)
+				{
+					uint8_t _requestResult = swarm_requestPiece(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,
+							_wishedBlock->wishedPieceIndex,
+							_blockWishIterator*(_wishedBlock->wishedBlockSize),
+							_wishedBlock->wishedBlockSize); //TODO is this really the right place to request packets from? does it need to be thread safe?
+
+					if (_requestResult == 0)
+					{
+						printf("Failed to request peice from peer when downloading\n");
+						continue;
+					}
+				}
+				//=== NOTE THAT REQUESTS FOR DATA WERE MADE ===
 				_hasRequestedFromPeers = 1;
 			}
-		}
 
-		if (_hasRequestedFromPeers == 1)
-		{
-			_watchdogData->timeLastRequestedActualBlock = _timeOfCheck;
+			//=== INGESTING EXISTING QUEUE FROM THIS PEER ===
+			while(1)
+			{
+				void* theData = swarm_query_peer(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,SWARM_QUERY_DRAIN_PIECE,NULL);
+
+				if (theData == NULL)
+				{
+//					printf("DEBUG: Peer %lu drained of actual data\n",_connectedPeerIterator);
+					break;
+				}
+
+				uint8_t _pieceIngestResult = piecetracker_ingestSwarmBlock(_watchdogData->thePieceTracker,theData);
+				if (_pieceIngestResult == 0)
+				{
+					;//TODO handle situation, the block may just already be full
+//					printf("Failed to ingest peice from peer when downloading, probably block has been used already\n");
+				}
+
+				swarm_block_destroyBlockWrapper(theData); //Only destroy the block wrapper, as the data will still be used inside the piece tracker.
+			}
 		}
+//		//=== UPDATE LAST TIME SENT REQUESTS ===
+//		if (_hasRequestedFromPeers == 1)
+//		{
+//			_watchdogData->timeLastRequestedActualBlock = _timeOfCheck;
+//		}
 		//=== CLEANUP ===
-		if (_wishedBlock != NULL) piecetracker_destroyWish(_wishedBlock);
+//		if (_wishedBlock != NULL) piecetracker_destroyWish(_wishedBlock);
 		swarm_filters_destroyPeerFilterBucket(_filteredConnectedPeers);
 	}
+	else if (_theSwarmExecutionMode == SWARM_EXEC_COMPLETE)
+	{
+		printf("DEBUG: Download complete! :)\n");
+	}
 }
+
 
 void watchdog_peerswarm_ingestPeer(watchdog_peerswarm_t* __thePeerSwarmWatchdog, peer_networkconfig_h* __peerConfig,torrent_t* __torrentData)
 {

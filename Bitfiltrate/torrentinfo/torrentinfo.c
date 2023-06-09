@@ -86,3 +86,17 @@ torrent_t* torrent_openTorrent(char* __filePath)
 
 	return NULL;
 }
+
+torrent_t* torrent_dummyHashTorrent(char* __asciiHash)
+{
+	torrent_t* _theTorrent = malloc(sizeof(torrent_t));
+
+	for (size_t _stringIterator = 0; _stringIterator < 40; _stringIterator += 2)
+	{
+		char _lowChar = __asciiHash[_stringIterator];
+		char _highChar = __asciiHash[_stringIterator+1];
+
+		uint8_t _theByte = (_lowChar - 'a' + 1)*16 + (_highChar - 'a');
+		printf("%d\n",_theByte);
+	}
+}

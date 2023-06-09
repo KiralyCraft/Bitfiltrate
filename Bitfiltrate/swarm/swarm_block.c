@@ -22,9 +22,14 @@ swarm_block_t* swarm_block_constructBlockWrapper(size_t __thePieceIndex,size_t _
 
 	return _theConstructedPiece;
 }
-void swarm_block_destroyBlockWrapper(swarm_block_t* __theBlockWrapper)
+
+void swarm_block_destroyBlockDataAndWrapper(swarm_block_t* __theBlockWrapper)
 {
 	free(__theBlockWrapper->theData);
+	free(__theBlockWrapper);
+}
+void swarm_block_destroyBlockWrapper(swarm_block_t* __theBlockWrapper)
+{
 	free(__theBlockWrapper);
 }
 

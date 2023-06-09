@@ -83,7 +83,7 @@ uint8_t udptracker_initialize(udptrack_t* __trackerData,conpool_t* __theConnecti
 {
 	pthread_mutex_lock(&__trackerData->lockingMutex);
 	//==== CREATE THE CONNECTION POOL ====
-	conc_queue* _outgoingQueue = conpool_createConnection(__theConnectionPool,__trackerData->trackerNetworkConfiguration,udptracker_comm_outgoingFunction,udptracker_comm_incomingFunction,udptracker_proto_processRawGenericPacket,__trackerData,_udptracker_processResponseAction);
+	conc_queue_t* _outgoingQueue = conpool_createConnection(__theConnectionPool,__trackerData->trackerNetworkConfiguration,udptracker_comm_outgoingFunction,udptracker_comm_incomingFunction,udptracker_proto_processRawGenericPacket,__trackerData,_udptracker_processResponseAction);
 	__trackerData->trackerOutgoingPacketQueue = _outgoingQueue;
 	__trackerData->trackerStatus = UDPTRACK_INITIALIZING;
 

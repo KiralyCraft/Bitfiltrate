@@ -37,7 +37,7 @@ typedef struct
 {
 	//==== CONNECTIVITY ====
 	udptrack_networkconfig* trackerNetworkConfiguration;
-	conc_queue* trackerOutgoingPacketQueue;
+	conc_queue_t* trackerOutgoingPacketQueue;
 	dlinkedlist_t* trackerConversations;
 	//==== SPECIFICS ====
 	/*
