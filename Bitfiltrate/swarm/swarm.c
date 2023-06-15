@@ -72,7 +72,7 @@ uint8_t swarm_ingestPeer(swarm_t* __theSwarm, peer_networkconfig_h* __peerDetail
 		}
 	}
 	pthread_mutex_unlock(&__theSwarm->peerManipulationMutex);
-	printf("Peer ingested!\n");
+	//printf("Peer ingested!\n");
 	return 1;
 }
 

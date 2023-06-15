@@ -23,6 +23,7 @@
 #include <endian.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #define TCP_CHUNK_SIZE 1500
 #define TCP_CONNECTION_TIMEOUT 10
@@ -61,13 +62,13 @@ uint8_t _tcpswarm_peerConnect(peer_networkconfig_h* __thePeerNetworkConfiguratio
 	int _connectionResult = connect(_socketDescriptor, (struct sockaddr*) &_theSocketAddress, sizeof(_theSocketAddress));
 	if (_connectionResult < 0)
 	{
-		printf("Aww failed with %s %d in _tcpswarm_peerConnect\n",inet_ntoa(_theSocketAddress.sin_addr),__thePeerNetworkConfiguration->peerPort);
+		//printf("Aww failed with %s %d in _tcpswarm_peerConnect\n",inet_ntoa(_theSocketAddress.sin_addr),__thePeerNetworkConfiguration->peerPort);
 		__thePeerNetworkConfiguration -> peerConnectionStatus = PEER_ERROR;
 		return 0;
 	}
 	else
 	{
-		printf("Eyy connected with %s %d in _tcpswarm_peerConnect\n",inet_ntoa(_theSocketAddress.sin_addr),__thePeerNetworkConfiguration->peerPort);
+		//printf("Eyy connected with %s %d in _tcpswarm_peerConnect\n",inet_ntoa(_theSocketAddress.sin_addr),__thePeerNetworkConfiguration->peerPort);
 		__thePeerNetworkConfiguration -> peerSocket = _socketDescriptor;
 		__thePeerNetworkConfiguration -> peerConnectionStatus = PEER_INITIALIZED;
 		return 1;
@@ -90,7 +91,7 @@ void _tcpswarm_outgoingFunction(void* __socketDescriptor, void* __outgoingData, 
 		pthread_mutex_unlock(&(_thePeerDetails->syncMutex));
 		if (_connectionResult == 0)
 		{
-			printf("Connection failed :(\n");
+//			printf("Connection failed :(\n");
 			return; //Do not attempt to send data to this peer, as it has indicated connection has failed
 		}
 	}
@@ -215,7 +216,7 @@ void* _tcpswarm_incomingFunction(void* __socketDescriptor, void* __optionalArgum
 		uint8_t _incomingMessageLengthReadAttempt = _tcpswarm_readExactByteCount(_thePeerNetworkConfiguration->peerSocket,_incomingMessageLengthBuffer,4);
 		if (_incomingMessageLengthReadAttempt == 0)
 		{
-			printf("Read 0 bytes wtf?\n");
+			fprintf(stderr,"Read 0 bytes from a peer?\n");
 			//TODO handle failed to read message length
 		}
 

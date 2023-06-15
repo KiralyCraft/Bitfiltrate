@@ -97,7 +97,7 @@ void _watchdog_udptracker_executor(void* __watchdogContext)
 				_foundConversation = dlinkedlist_getCustomElement(&_torrentData->uniqueIdentifier,_watchdog_udptracker_comparator_conversation_torrentid,_trackerData->trackerConversations);
 				if (_foundConversation != NULL)
 				{
-					printf("DEBUG: Fetched convo type: %d,%d\n",_foundConversation->conversationType,_foundConversation->converstationStatus);
+//					printf("DEBUG: Fetched convo type: %d,%d\n",_foundConversation->conversationType,_foundConversation->converstationStatus);
 					udptrack_packet_reply_t* _theReplyPacket = _foundConversation->supplementalResponseData;
 					//=== PROCESSING OF DATA ===
 					if (_foundConversation->converstationStatus == UDP_TRACKER_CONV_FINISHED)

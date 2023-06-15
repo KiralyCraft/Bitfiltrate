@@ -34,7 +34,6 @@ void udptracker_comm_outgoingFunction(void* __socketDescriptor, void* __outgoing
 
 	ssize_t _bytesSent = sendto(_trackerNetworkConfiguration->trackerSocket, _thePacket->packetData, _thePacket->packetSize , 0 , (const struct sockaddr *) &_theTargetServer, sizeof(_theTargetServer));
 
-	printf("%s\n",inet_ntoa(_theTargetServer.sin_addr));
 	if (_bytesSent != _thePacket->packetSize)
 	{
 		//TODO error
@@ -42,7 +41,7 @@ void udptracker_comm_outgoingFunction(void* __socketDescriptor, void* __outgoing
 	}
 	else
 	{
-		printf("DEBUG: Request sent :)\n");
+		printf("DEBUG: Generic request sent to tracker :)\n");
 	}
 }
 

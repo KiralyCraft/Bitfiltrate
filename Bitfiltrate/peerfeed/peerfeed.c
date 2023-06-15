@@ -19,9 +19,10 @@
 uint8_t peerfeed_ingestPeersFromFile(conc_queue_t* __peerIngestionQueue,char* __theFile)
 {
 	 int _theFD = open(__theFile, O_RDONLY);
-
+//	 printf("Peerfeed is feeding from %s\n",__theFile);
+//	 printf("Peerfeed ingested 1000 peers from the file.\n");
+//	 printf("Swarm initialized, progressively connecting and querying.\n");
 	 uint8_t _theBuffer[PEERFEED_MAX_LINE_LEN+3]; //Should fit at most 255.255.255.255:65535 , a NEWLINE and a RETURNLINE and a NULL
-
 	 off_t _aheadJump = 0;
 	 do
 	 {
@@ -35,7 +36,7 @@ uint8_t peerfeed_ingestPeersFromFile(conc_queue_t* __peerIngestionQueue,char* __
 		 size_t _readBytes = read(_theFD,_theBuffer,PEERFEED_MAX_LINE_LEN+2);
 		 if (_readBytes < 0)
 		 {
-			 printf("DEBUG: Reached end of file\n");
+			 printf("DEBUG: Read file failed\n");
 			 break;
 		 }
 
@@ -63,6 +64,7 @@ uint8_t peerfeed_ingestPeersFromFile(conc_queue_t* __peerIngestionQueue,char* __
 
 		 if (_readBytes == 1 || _readBytes == _positionFlagEnded)
 		 {
+			 printf("DEBUG: peerfeed reached end of file\n");
 			 break;
 		 }
 		 _aheadJump = _readBytes - _positionFlagEnded;
@@ -94,8 +96,6 @@ uint8_t peerfeed_ingestPeersFromFile(conc_queue_t* __peerIngestionQueue,char* __
 		 conc_queue_push(__peerIngestionQueue,_thePeerDetails);
 	 }
 	 while(1);
-
 	 close(_theFD);
-
 	 return 1;
 }

@@ -163,7 +163,7 @@ uint8_t _udptracker_processResponseAction(udptrack_t* __trackerData,udptrack_pac
 	{
 		udptrack_packet_reply_data_announce_t* _packetReplyAnnounce = __packetReply -> packetData;
 		_shouldClear = 0;
-		printf("Announce received\n");
+		printf("Tracker announce received\n");
 	}
 	else if (__packetReply -> packetType == UDP_TRACKER_PACKET_SCRAPE)
 	{

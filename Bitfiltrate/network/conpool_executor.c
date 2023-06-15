@@ -9,6 +9,7 @@
 #include "conpool.h"
 #include "concurrent_queue.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 void* conpool_executorSendingFunction(void* __providedData)
 {
@@ -29,11 +30,11 @@ void* conpool_executorSendingFunction(void* __providedData)
 
 	return NULL;
 }
-
+size_t alive = 0;
 void* conpool_executorReceivingFunction(void* __providedData)
 {
 	conpool_connection_details_t* _connectionDetails = __providedData;
-
+	alive++;
 	//TODO implement a proper stopping technique for clean shutdowns
 	while(1)
 	{
@@ -41,7 +42,8 @@ void* conpool_executorReceivingFunction(void* __providedData)
 		void* _receivedData = _connectionDetails->incomingFunction(_connectionDetails->socketDescription,_connectionDetails->optionalArgument);
 		if (_receivedData == NULL)
 		{
-			printf("Connection died\n");
+			alive--;
+//			printf("Connection died. Alive: %lu\n",alive);
 			_connectionDetails->connectionHealth = CONPOOL_CONNECTION_STATUS_DEAD;
 			break;
 		}

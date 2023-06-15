@@ -78,7 +78,7 @@ typedef struct
 
 } watchdog_peerswarm_t;
 
-watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool, piecetracker_t* __thePieceTracker);
+watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,uint8_t __startingPieceSizeLog2,torrent_t* __torrentHash,conpool_t* __theConnectionPool, piecetracker_t* __thePieceTracker);
 
 /*
  * This is a function which should accept the given peer and add it to the watchdog (and therefore the pool).

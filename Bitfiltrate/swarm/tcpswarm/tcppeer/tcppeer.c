@@ -123,6 +123,11 @@ size_t tcppeer_getHighestBitfieldPiece(tcppeer_t* __thePeer)
 	dlinkedlist_t* _bitfieldList = __thePeer -> peerBitfield;
 	size_t _currentByteCount = dlinkedlist_getCount(_bitfieldList);
 
+	if (_currentByteCount == 0)
+	{
+		return 0;
+	}
+
 	for (size_t _pieceByteIterator = _currentByteCount-1; _pieceByteIterator > 0; _pieceByteIterator--)
 	{
 		uint8_t _pieceByteData = *((uint8_t*)dlinkedlist_getPosition(_pieceByteIterator, _bitfieldList));

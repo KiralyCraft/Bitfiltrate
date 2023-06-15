@@ -31,11 +31,11 @@ void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcpp
 	{
 		return; //Do not even attempt to process messages with 0 length (likely keep-alive)
 	}
-
 	//=== PROCESSING THE PACKET ===
 	uint8_t _packetTypeID = __packagedPacket->packetData[0];
 	uint8_t* _packetDataOffset =  __packagedPacket->packetData+1;
 
+//	printf("DEBUG: Received %d\n",_packetTypeID);
 	//=== MARKING PACKET AS SEEN ===
 	uint8_t _packetSeenMask = 1 << _packetTypeID;
 	__thePeer->packetsReceivedBitfield |= _packetSeenMask;
@@ -68,7 +68,9 @@ void _tcpswarm_actualProcessingFunction(tcpswarm_packet_t* __packagedPacket,tcpp
 	}
 	else if (_packetTypeID == 5) //Bitfield
 	{
-		printf("Recevied BITFIELD\n");
+		printf("Recevied BITFIELD - At least one peer owns the data!\n");
+//		printf("Debug exit!\n");
+//		exit(67);
 		size_t _receivedBitfieldSize = (__packagedPacket->packetSize - 1)/(sizeof(uint8_t));
 
 		for (size_t _bitfieldByteIterator = 0; _bitfieldByteIterator < _receivedBitfieldSize; _bitfieldByteIterator++)

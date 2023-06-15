@@ -13,14 +13,11 @@
 #include "../../torrentinfo/torrentinfo.h"
 #include <stdlib.h>
 
-
 #include "dlinkedlist.h"
-
-#define SWARM_PIECESIZE_LOG2_START 19
 
 void _watchdog_peerswarm_executor(void* __watchdogContext);
 
-watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_t* __torrentHash,conpool_t* __theConnectionPool,piecetracker_t* __thePieceTracker)
+watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,uint8_t __startingPieceSizeLog2,torrent_t* __torrentHash,conpool_t* __theConnectionPool,piecetracker_t* __thePieceTracker)
 {
 	//=== SETTING UP THE TCP SWARM ===
 	swarm_definition_t* _theSwarmDefinition = tcpswarm_createDefinition(swarm_postProcessPeerData);
@@ -30,7 +27,7 @@ watchdog_peerswarm_t* watchdog_peerswarm_init(watchdog_t* __theWatchdog,torrent_
 	watchdog_peerswarm_t* _newPeerSwarmWatchdog = malloc(sizeof(watchdog_peerswarm_t));
 	_newPeerSwarmWatchdog -> thePeerSwarm = _peerSwarm;
 	_newPeerSwarmWatchdog -> swamExecutionMode = SWARM_EXEC_GUESS_PIECE_SIZE;
-	_newPeerSwarmWatchdog -> swarmPieceSize = 19;
+	_newPeerSwarmWatchdog -> swarmPieceSize = __startingPieceSizeLog2;
 	_newPeerSwarmWatchdog -> thePieceTracker = __thePieceTracker;
 	_newPeerSwarmWatchdog -> lastWishedBlock = NULL;
 	_newPeerSwarmWatchdog -> timeGuessedPiece = 0;
@@ -61,7 +58,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 	uint32_t _pendingPeerCount = conc_queue_count(_watchdogData->peerIngestionQueue);
 	if (_pendingPeerCount > 0)
 	{
-		printf("WATCHDOG popping peer for ingestion\n");
+		//printf("WATCHDOG popping peer for ingestion\n");
 		peer_networkconfig_h* _poppedPeerConfiguration = conc_queue_pop(_watchdogData->peerIngestionQueue);
 		uint8_t _ingestResult = swarm_ingestPeer(_watchdogData->thePeerSwarm,_poppedPeerConfiguration); //This method is thread safe
 		if (_ingestResult == 0)
@@ -76,7 +73,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 	watchdog_peerswarm_execution_mode_e _theSwarmExecutionMode = _watchdogData->swamExecutionMode;
 	if (_theSwarmExecutionMode == SWARM_EXEC_GUESS_PIECE_SIZE)
 	{
-		if (difftime(time(NULL),_watchdogData->timeLastPeerIngested) < 5)
+		if (difftime(time(NULL),_watchdogData->timeLastPeerIngested) < 10)
 		{
 			return;
 		}
@@ -96,7 +93,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 
 		if (_connectedPeerCount > 0)
 		{
-			printf("DEBUG: Watchdog probing peers\n");
+			printf("The swarm watchdog is probing peers with piece size %d\n",_watchdogData->swarmPieceSize);
 			//=== COMPUTING OFFSET ===
 			uint32_t _guessedPieceSize = (1 << _watchdogData->swarmPieceSize);
 			//=== SENDING OUT REQUESTS FOR THE CURRENT PIECE SIZE ===
@@ -215,13 +212,13 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 			{
 
 				uint8_t _isLastWishExpired = 0;
-				if (difftime(time(NULL),_watchdogData->timeWishLastFulfilled) > 10)
+				if (_watchdogData->timeWishLastFulfilled != 0 && difftime(time(NULL),_watchdogData->timeWishLastFulfilled) > 10)
 				{
 					_isLastWishExpired = 1;
 					printf("DEBUG: Last wish has expired, requesting data again\n");
 				}
 
-				if (_isLastWishExpired || piecetracker_isWishFulfilled(_watchdogData->thePieceTracker,_watchdogData->lastWishedBlock))
+				if (_watchdogData->timeWishLastFulfilled == 0 || _isLastWishExpired || piecetracker_isWishFulfilled(_watchdogData->thePieceTracker,_watchdogData->lastWishedBlock))
 				{
 					_watchdogData->timeWishLastFulfilled = time(NULL);
 					piecetracker_destroyWish(_watchdogData->lastWishedBlock); //Once the old wish has been fulfilled, destroy it.
@@ -276,7 +273,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 
 				size_t _wishedBlockIndexStart = _wishedBlock->wishedBlockIndexStart;
 				size_t _wishedBlockIndexEnd = _wishedBlock->wishedBlockIndexEnd;
-				printf("DEBUG: wishing for piece %lu\n",_wishedBlock->wishedPieceIndex);
+				printf("DEBUG: wishing for piece %lu of range %lu to %lu, with max %lu pieces \n",_wishedBlock->wishedPieceIndex,_wishedBlockIndexStart,_wishedBlockIndexEnd,_watchdogData->thePieceTracker->maximumPieceCount);
 				for (size_t _blockWishIterator = _wishedBlockIndexStart; _blockWishIterator <= _wishedBlockIndexEnd; _blockWishIterator++)
 				{
 					uint8_t _requestResult = swarm_requestPiece(_watchdogData->thePeerSwarm,_theConnectedIteratedPeer,
@@ -333,7 +330,7 @@ void _watchdog_peerswarm_executor(void* __watchdogContext)
 
 void watchdog_peerswarm_ingestPeer(watchdog_peerswarm_t* __thePeerSwarmWatchdog, peer_networkconfig_h* __peerConfig,torrent_t* __torrentData)
 {
-	printf("WATCHDOG: Ingesting peer\n");
+//	printf("WATCHDOG: Ingesting peer\n");
 	//The concurrent queue always locks and is, as the name suggests, concurrent.
 	conc_queue_push(__thePeerSwarmWatchdog->peerIngestionQueue,__peerConfig);
 }

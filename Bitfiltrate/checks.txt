@@ -1,0 +1,187 @@
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+DEBUG: Reached end of file
+66
+Doing filtered-003.txt
+141
+Doing filtered-004.txt
+DEBUG: Reached end of file
+66
+Doing filtered-005.txt
+141
+Doing filtered-006.txt
+DEBUG: Reached end of file
+DEBUG: Received 5
+Recevied BITFIELD - At least one peer owns the data!
+Debug exit!
+67
+805a8d5846829dba00a2865a58ec8f7e3b15c5d3,true
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+DEBUG: Reached end of file
+66
+Doing filtered-003.txt
+DEBUG: Reached end of file
+66
+Doing filtered-004.txt
+DEBUG: Reached end of file
+66
+Doing filtered-005.txt
+DEBUG: Reached end of file
+66
+Doing filtered-006.txt
+141
+Doing filtered-007.txt
+141
+ae06f8fa35219e6fbfd7d20f04e4739cabffebea,false
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+DEBUG: Reached end of file
+66
+Doing filtered-003.txt
+141
+Doing filtered-004.txt
+141
+Doing filtered-005.txt
+DEBUG: Reached end of file
+The swarm watchdog is probing peers
+Told peers about pieces!
+66
+Doing filtered-006.txt
+DEBUG: Reached end of file
+66
+Doing filtered-007.txt
+141
+4d0a2ef7c184fe07448cfc4934531f43a6fb3672,false
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+DEBUG: Reached end of file
+66
+Doing filtered-003.txt
+DEBUG: Reached end of file
+66
+Doing filtered-004.txt
+DEBUG: Reached end of file
+66
+Doing filtered-005.txt
+DEBUG: Reached end of file
+66
+Doing filtered-006.txt
+DEBUG: Reached end of file
+66
+Doing filtered-007.txt
+DEBUG: Reached end of file
+66
+1ee5d20a4f4bda672da284f9d5e8767f36bac148,false
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+DEBUG: Reached end of file
+66
+Doing filtered-003.txt
+141
+Doing filtered-004.txt
+141
+Doing filtered-005.txt
+141
+Doing filtered-006.txt
+141
+Doing filtered-007.txt
+141
+c4fd53cc42b3c4e2833405d5aaa2e284c7c7965d,false
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+141
+Doing filtered-003.txt
+141
+Doing filtered-004.txt
+141
+Doing filtered-005.txt
+141
+Doing filtered-006.txt
+DEBUG: Reached end of file
+66
+Doing filtered-007.txt
+141
+24c833760f1821d63553b5ddbcf69396ef2ec70a,false
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+DEBUG: Reached end of file
+66
+Doing filtered-003.txt
+141
+Doing filtered-004.txt
+DEBUG: Reached end of file
+66
+Doing filtered-005.txt
+141
+Doing filtered-006.txt
+141
+Doing filtered-007.txt
+141
+9f59130e5189e4a3dd3945f6d618610c500eecf7,false
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+141
+Doing filtered-003.txt
+141
+Doing filtered-004.txt
+DEBUG: Reached end of file
+66
+Doing filtered-005.txt
+141
+Doing filtered-006.txt
+141
+Doing filtered-007.txt
+DEBUG: Reached end of file
+66
+2f940a23164606a8646a059f0a82597f246aa31f,false
+Doing filtered-000.txt
+DEBUG: Reached end of file
+66
+Doing filtered-001.txt
+DEBUG: Reached end of file
+66
+Doing filtered-002.txt
+DEBUG: Reached end of file
+66
+Doing filtered-003.txt

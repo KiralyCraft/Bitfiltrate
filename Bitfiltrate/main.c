@@ -17,46 +17,52 @@
 #include "swarm/tcpswarm/tcpswarm.h"
 
 #include "peerfeed/peerfeed.h"
+#include <signal.h>
+#include <stdio.h>
+#include <signal.h>
+#include <unistd.h>
+#include <stdlib.h>
 
-int main()
+int main(int argc, char** argv)
 {
+	if (argc < 5)
+	{
+		printf("USAGE: [infohash] [startingpiecesizelog2] [mode] [peer_source] [tracker_port].\n");
+		printf("The infohash must be an exact 40-charcater, hexadecimal lowercase string representing the torrent hash.\n");
+		printf("The startingpiecesizelog2 is the upper range from which pieces are guessed. Default is 24.\n");
+		printf("The mode must be explicitely a 1 or 0, indicated a file mode operation or UDP tracker respectively.\n");
+		printf("The peer source can either be a filename (for mode 1), or a DNS entry of a UDP tracker. In this case, the port is also required.\n");
+		exit(1);
+	}
 
-//
-//	//========DEBUG CODE BELOW==========
-//	int createdSocket = udp_conn_createSocket();
-//
+	if (argv[3][0] == '0' && argc < 6)
+	{
+		printf("The tracker port is also required.\n");
+		exit(1);
+	}
 
-//
-//	conc_queue* outgoingPacketQueue = conpool_createConnection(theConnectionPool,createdSocket,udp_conn_outgoingFunction,udp_conn_incomingFunction,udp_conn_processingFunction);
-//	getchar();
-//
-//	char buffer[50] = {0};
-//	sprintf(buffer, "%s\n", "Macaroane cu branza baaa");
-//
-//	void* theBuiltPacket = udp_conn_buildPacket(buffer,sizeof(buffer),0);
-//	conc_queue_push(outgoingPacketQueue,theBuiltPacket);
-//	getchar();
-
-//	udptrack_t* theTracker = udptracker_create("tracker.openbittorrent.com",6969);
-//
-//	udptracker_initialize(theTracker,theConnectionPool);
-
-//	swarm_t* _thePeerSwarm = swarm_createPeerSwarm();
-
-	//=========================
 	watchdog_t* _theWatchdog = watchdog_createWatchdogSupervisor();
 //
 	conpool_t* theConnectionPool = conpool_createPool();
 	conpool_t* theSwarmConnectionPool = conpool_createPool();
-//	torrent_t* _theTorrent = torrent_openTorrent("systemrescue-10.01-amd64.iso.torrent");
-	torrent_t* _theTorrent = torrent_dummyHashTorrent("84130aa9cb8503ad4330bb8e6c69129c1d2f4464");
-	piecetracker_t* _thePieceTracker = piecetracker_constructTracker();
-	watchdog_peerswarm_t* _thePeerSwarm = watchdog_peerswarm_init(_theWatchdog,_theTorrent,theSwarmConnectionPool,_thePieceTracker);
+//	torrent_t* _theTorrent = torrent_dummyHashTorrent("2e299b0bf7af4aa3bc5213be50fcb6b7189a8e70");
+	torrent_t* _theTorrent = torrent_dummyHashTorrent(argv[1]);
 
-	peerfeed_ingestPeersFromFile(_thePeerSwarm->peerIngestionQueue,"peers.txt");
-//
+	piecetracker_t* _thePieceTracker = piecetracker_constructTracker();
+	watchdog_peerswarm_t* _thePeerSwarm = watchdog_peerswarm_init(_theWatchdog,atoi(argv[2]),_theTorrent,theSwarmConnectionPool,_thePieceTracker);
+
+	if (argv[3][0] == '1')
+	{
+		peerfeed_ingestPeersFromFile(_thePeerSwarm->peerIngestionQueue,argv[4]);
+	}
+
 	watchdog_diskio_t* _theDiskioWatchdog = watchdog_diskio_init(_theWatchdog,_thePieceTracker);
-//	watchdog_udptracker_init(_theTorrent,"tracker.openbittorrent.com",6969,_theWatchdog,_thePeerSwarm,theConnectionPool);
+
+	if (argv[3][0] == '0')
+	{
+		watchdog_udptracker_init(_theTorrent,argv[4],atoi(argv[5]),_theWatchdog,_thePeerSwarm,theConnectionPool);
+	}
 
 	getchar();
+
 }
